@@ -66,12 +66,19 @@ if [[ -n "$unpacked_path" ]]; then
   cp -a "$unpacked_path"/. "$install_root/app-src/app.asar.unpacked/"
 fi
 
-pushd "$install_root/app-src" >/dev/null
+native_build="$WORKDIR/native-build"
+mkdir -p "$native_build"
+pushd "$native_build" >/dev/null
+npm init -y >/dev/null
 npm install --omit=dev better-sqlite3@12.9.0 node-pty@1.1.0
-"$ROOT/scripts/patch-native-modules" "$install_root/app-src"
+"$ROOT/scripts/patch-native-modules" "$native_build"
 npx --yes @electron/rebuild -v 42.1.0 -m node_modules/better-sqlite3
 npx --yes @electron/rebuild -v 42.1.0 -m node_modules/node-pty
 popd >/dev/null
+mkdir -p "$install_root/app-src/node_modules"
+rm -rf "$install_root/app-src/node_modules/better-sqlite3" "$install_root/app-src/node_modules/node-pty"
+cp -a "$native_build/node_modules/better-sqlite3" "$install_root/app-src/node_modules/"
+cp -a "$native_build/node_modules/node-pty" "$install_root/app-src/node_modules/"
 
 "$ROOT/scripts/apply-linux-patches" "$install_root" "$VERSION"
 "$ROOT/scripts/build-packages" "$WORKDIR/pkgroot" "$VERSION" "$dmg_sha"
