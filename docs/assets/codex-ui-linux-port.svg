@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Codex UI Linux Port icon</title>
+  <desc id="desc">Project icon for the unofficial Codex UI Linux packaging port.</desc>
+  <defs>
+    <linearGradient id="bg" x1="86" y1="52" x2="426" y2="460" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#172018"/>
+      <stop offset="0.55" stop-color="#0b0d0b"/>
+      <stop offset="1" stop-color="#22180d"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="98" y1="72" x2="414" y2="440" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffb454"/>
+      <stop offset="0.5" stop-color="#8fd18f"/>
+      <stop offset="1" stop-color="#f4f1e8"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="10" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="1 0 0 0 1 0 0.65 0 0 0.55 0 0 0.32 0 0.22 0 0 0 1 0"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <path d="M256 72 414 164v184L256 440 98 348V164L256 72Z" fill="none" stroke="url(#edge)" stroke-width="32" stroke-linejoin="round" filter="url(#glow)"/>
+  <path d="M256 146 350 201v110l-94 55-94-55V201l94-55Z" fill="none" stroke="#8fd18f" stroke-width="24" stroke-linejoin="round" opacity="0.9"/>
+  <path d="M202 256h108" stroke="#f4f1e8" stroke-width="22" stroke-linecap="round"/>
+  <path d="m286 222 34 34-34 34" fill="none" stroke="#ffb454" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="256" cy="256" r="18" fill="#ffb454"/>
+</svg>

@@ -1,4 +1,8 @@
 <p align="center">
+  <img src="docs/assets/codex-ui-linux-port.svg" alt="Codex UI Linux Port icon" width="132">
+</p>
+
+<p align="center">
   <strong>Codex UI Linux Port</strong>
 </p>
 
