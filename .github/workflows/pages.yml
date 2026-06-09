@@ -14,6 +14,9 @@ permissions:
   pages: write
   id-token: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 concurrency:
   group: pages
   cancel-in-progress: true
@@ -28,14 +31,40 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Check Pages availability
+        id: pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh api "repos/$GITHUB_REPOSITORY/pages" >/dev/null 2>&1; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          visibility="$(gh repo view "$GITHUB_REPOSITORY" --json visibility --jq .visibility)"
+          if [ "$visibility" = "PRIVATE" ]; then
+            echo "GitHub Pages is not available for this private repository on the current plan; skipping deploy."
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          gh api --method POST "repos/$GITHUB_REPOSITORY/pages" -f build_type=workflow >/dev/null
+          echo "available=true" >> "$GITHUB_OUTPUT"
+
       - name: Configure Pages
+        if: steps.pages.outputs.available == 'true'
         uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - name: Upload artifact
+        if: steps.pages.outputs.available == 'true'
         uses: actions/upload-pages-artifact@v3
         with:
           path: site
 
       - name: Deploy
+        if: steps.pages.outputs.available == 'true'
         id: deployment
         uses: actions/deploy-pages@v4
