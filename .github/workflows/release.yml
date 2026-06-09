@@ -127,7 +127,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.source.outputs.version }}
         run: |
-          gh release create "v$VERSION" dist/* \
+          mapfile -t assets < <(find dist -maxdepth 1 -type f | sort)
+          gh release create "v$VERSION" "${assets[@]}" \
             --repo "$GITHUB_REPOSITORY" \
             --title "Codex UI Linux Port $VERSION" \
             --notes "Unofficial automated Linux package build for Codex UI $VERSION."
@@ -138,7 +139,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.source.outputs.version }}
         run: |
-          gh release upload "v$VERSION" dist/* \
+          mapfile -t assets < <(find dist -maxdepth 1 -type f | sort)
+          gh release upload "v$VERSION" "${assets[@]}" \
             --repo "$GITHUB_REPOSITORY" \
             --clobber
           gh release edit "v$VERSION" \
