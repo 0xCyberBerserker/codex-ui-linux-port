@@ -52,6 +52,7 @@ need sed
 need grep
 need sha256sum
 need jq
+need gh
 
 arch="$(uname -m)"
 if [[ "$arch" != "x86_64" ]]; then
@@ -100,18 +101,6 @@ current_version() {
     codex-ui-linux --version 2>/dev/null | sed -n 's/.*\([0-9][0-9]\.[0-9][0-9][0-9]\.[0-9][0-9]*\).*/\1/p' | head -n 1
   fi
 }
-
-auth_ready=0
-if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
-  auth_ready=1
-elif [[ -n "${GITHUB_TOKEN:-}${GH_TOKEN:-}" ]]; then
-  auth_ready=1
-fi
-
-if [[ "$auth_ready" -ne 1 ]]; then
-  echo "$PROGRAM: private release access requires 'gh auth login' or GITHUB_TOKEN/GH_TOKEN" >&2
-  exit 2
-fi
 
 api_json="$(mktemp)"
 trap 'rm -f "$api_json"; [[ -n "${tmpdir:-}" ]] && rm -rf "$tmpdir"' EXIT
@@ -199,4 +188,3 @@ if [[ "$SMOKE" -eq 1 ]]; then
 fi
 
 echo "$PROGRAM: installed $latest_version"
-

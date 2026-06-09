@@ -22,7 +22,7 @@ The Arch/CachyOS package is the primary target. Debian and Fedora packages are g
 
 ## Release Build Authority
 
-GitHub Actions is the authoritative builder for release artifacts. While the repository is private, generated releases are private. If the repository becomes public later, the same workflow remains authoritative, but release asset visibility must follow the publication decision in `docs/publication.md`.
+GitHub Actions is the authoritative builder for release artifacts. Generated releases are public GitHub release assets and must remain clearly marked as unofficial.
 
 A release run must generate and validate:
 

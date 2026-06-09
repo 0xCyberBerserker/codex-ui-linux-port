@@ -11,10 +11,10 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/0xCyberBerserker/codex-ui-linux-port/actions/workflows/release.yml"><img alt="Release workflow" src="https://img.shields.io/badge/release%20build-passing-8fd18f"></a>
-  <a href="https://github.com/0xCyberBerserker/codex-ui-linux-port/releases/tag/v26.602.71036"><img alt="Latest release" src="https://img.shields.io/badge/latest%20release-v26.602.71036-ffb454"></a>
+  <a href="https://github.com/0xCyberBerserker/codex-ui-linux-port/actions/workflows/release.yml"><img alt="Release workflow" src="https://img.shields.io/github/actions/workflow/status/0xCyberBerserker/codex-ui-linux-port/release.yml?branch=main&label=release%20build"></a>
+  <a href="https://github.com/0xCyberBerserker/codex-ui-linux-port/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/0xCyberBerserker/codex-ui-linux-port?label=latest%20release"></a>
   <img alt="Targets" src="https://img.shields.io/badge/targets-Arch%20%7C%20Debian%20%7C%20RPM-ffb454">
-  <img alt="Status" src="https://img.shields.io/badge/status-private%20validation-8fd18f">
+  <img alt="Status" src="https://img.shields.io/badge/status-public%20automation-8fd18f">
   <img alt="Unofficial" src="https://img.shields.io/badge/OpenAI-unofficial-lightgrey">
 </p>
 
@@ -22,17 +22,17 @@
   <sub>Made with 🖤 in Barcelona City 🇪🇸</sub>
 </p>
 
-This repository rebuilds the upstream macOS Codex UI release artifact into Linux packages through auditable scripts and GitHub Actions. It is private while the automation and publication boundary are being validated, and it is structured so it can become public later without exposing maintainer-local data.
+This repository rebuilds upstream Codex UI release artifacts into Linux packages through auditable scripts and GitHub Actions.
 
 ## Project Signal
 
 | Area | Current signal |
 | --- | --- |
-| Release builder | GitHub Actions is authoritative; badge is static while repository is private |
+| Release builder | GitHub Actions is authoritative |
 | Source tracking | Upstream appcast, current source archive, SHA256 manifest |
 | Linux targets | Arch/CachyOS, Debian/Ubuntu, Fedora/RHEL-like |
-| Public status | Private validation now, public-ready structure later |
-| Data boundary | No chats, credentials, runtime state, employer data, or local paths |
+| Public status | Public automation repository |
+| Data boundary | No chats, credentials, runtime state, private data, or local paths |
 | AUR status | Metadata prepared, not published |
 
 ## What It Builds
@@ -53,13 +53,13 @@ Codex UI changes frequently. Linux users need a repeatable path that can:
 - apply Linux desktop patches
 - package the app for common Linux families
 - verify artifacts before release
-- keep private/runtime data out of git
+- keep private runtime data out of git
 
 ## Operational Rationale
 
-This project was developed as work-adjacent tooling during unavoidable waiting periods such as long builds, dependency installs, and CI feedback loops. The goal is to use that downtime productively: keep the daily Linux workstation stable, reduce repeated manual update work, and improve the reliability of a tool used for day-to-day engineering tasks.
+This project covers a practical need that emerged from daily engineering work: Codex UI is part of the maintainer's regular Linux workstation workflow, and frequent upstream updates made manual repackaging wasteful and error-prone.
 
-The repository is intentionally auditable, private during validation, and scoped to automation that improves the maintainer's working environment without storing employer data, chats, credentials, or runtime state.
+The automation was built to turn unavoidable waiting periods such as long builds, dependency installs, and CI feedback loops into useful maintenance time. The goal is straightforward: keep the workstation reliable, reduce repeated manual update work, and improve day-to-day engineering throughput without storing private runtime data, credentials, chats, or local project material.
 
 ## Install Or Update
 
@@ -79,7 +79,7 @@ Run a smoke test:
 codexui-update --smoke
 ```
 
-While this repository is private, release access requires `gh auth login`, `GITHUB_TOKEN`, or `GH_TOKEN`.
+Public release downloads do not require authentication. Private forks can use `gh auth login`, `GITHUB_TOKEN`, or `GH_TOKEN`.
 
 ## Release Pipeline
 
@@ -112,16 +112,13 @@ Before every commit and release:
 scripts/privacy-audit
 ```
 
-## Publication Status
+## Public Status
 
-Current state:
-
-- Repository visibility: private
-- Release visibility: private
-- Public release: planned, not ready
+- Repository visibility: public
+- Release visibility: public
 - AUR package: prepared, not published
 
-Before changing visibility, complete [docs/publication.md](docs/publication.md).
+Publication and redistribution notes live in [docs/publication.md](docs/publication.md).
 
 ## Documentation
 

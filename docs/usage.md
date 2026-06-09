@@ -16,15 +16,13 @@ The updater detects the host OS, downloads the latest compatible package from th
 
 ## Authentication
 
-While this repository is private, release access requires GitHub authentication.
+Public releases do not require authentication.
 
-Recommended:
+Private forks or rate-limited environments can authenticate with:
 
 ```bash
 gh auth login
 ```
-
-Alternative:
 
 ```bash
 export GITHUB_TOKEN=...

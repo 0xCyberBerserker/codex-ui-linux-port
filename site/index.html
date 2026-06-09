@@ -33,7 +33,7 @@
         <div class="hero-copy">
           <p class="eyebrow">Unofficial release automation</p>
           <h1 id="hero-title">Codex UI, rebuilt for Linux.</h1>
-          <p class="lede">A private-first packaging pipeline that tracks upstream Codex UI releases, validates artifacts, and prepares a clean path to public release.</p>
+          <p class="lede">A public packaging pipeline that tracks upstream Codex UI releases, validates artifacts, and keeps Linux packages reproducible.</p>
           <div class="actions">
             <a class="button primary" href="https://github.com/0xCyberBerserker/codex-ui-linux-port">View Repository</a>
             <a class="button secondary" href="#pipeline">Read The Pipeline</a>
@@ -44,9 +44,17 @@
       <section class="about" aria-labelledby="about-title">
         <div>
           <p class="section-kicker">About</p>
-          <h2 id="about-title">Built for repeatable Linux workstation updates.</h2>
+          <h2 id="about-title">Built for repeatable Linux updates.</h2>
         </div>
         <p>Codex UI changes fast. This project keeps Linux packaging deterministic: fetch current upstream source archive, rebuild native modules, apply Linux patches, emit packages, verify checksums, and keep local runtime data out of git.</p>
+      </section>
+
+      <section class="about" aria-labelledby="rationale-title">
+        <div>
+          <p class="section-kicker">Rationale</p>
+          <h2 id="rationale-title">Maintenance time turned into leverage.</h2>
+        </div>
+        <p>The automation came from a real workstation need: frequent Codex UI updates made manual Linux repackaging repetitive. Long builds, dependency installs, and CI waits became the right time to make that workflow reliable.</p>
       </section>
 
       <section id="pipeline" class="pipeline" aria-labelledby="pipeline-title">
@@ -91,9 +99,9 @@
 
       <section id="boundary" class="boundary" aria-labelledby="boundary-title">
         <p class="section-kicker">Boundary</p>
-        <h2 id="boundary-title">Private now. Public later, after review.</h2>
-        <p>The repository stores automation, patches, package metadata, and documentation. It must not store Codex chats, profiles, sessions, runtime databases, tokens, private keys, local paths, extracted app bundles, or employer context.</p>
-        <a class="button secondary" href="publication.html">Publication Checklist</a>
+        <h2 id="boundary-title">Public automation. Clear boundaries.</h2>
+        <p>The repository stores automation, patches, package metadata, and documentation. It must not store Codex chats, profiles, sessions, runtime databases, tokens, private keys, local paths, or extracted app bundles.</p>
+        <a class="button secondary" href="publication.html">Release Policy</a>
       </section>
     </main>
 

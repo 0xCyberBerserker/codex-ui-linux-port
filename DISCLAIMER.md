@@ -6,6 +6,6 @@ Codex, Codex UI, OpenAI trademarks, upstream binaries, release metadata, and app
 
 This repository is not affiliated with, endorsed by, or supported by OpenAI.
 
-The repository is currently private while automation, release handling, and publication boundaries are reviewed. Do not redistribute the repository or release assets publicly until licensing, redistribution, and trademark implications have been reviewed.
+Release assets are produced by unofficial automation from upstream Codex UI release artifacts. Review upstream redistribution, licensing, and trademark implications before redistributing these assets outside GitHub Releases.
 
 No open source license is granted until an explicit license file is added.
