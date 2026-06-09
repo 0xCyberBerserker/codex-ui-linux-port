@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PKGROOT="${1:?pkgroot required}"
+VERSION="${2:?version required}"
+DMG_SHA="${3:?dmg sha required}"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+DIST="$ROOT/dist"
+NAME="codex-ui-linux-port"
+ARCH="x86_64"
+
+rm -rf "$DIST"
+mkdir -p "$DIST"
+
+stage_common() {
+  local target="$1"
+  mkdir -p "$target/opt" "$target/usr/bin" "$target/usr/share/applications" "$target/usr/share/icons/hicolor/scalable/apps"
+  cp -a "$PKGROOT/opt/codex-ui-linux-port" "$target/opt/"
+  install -m 755 "$ROOT/scripts/codexui-update" "$target/opt/codex-ui-linux-port/bin/codexui-update"
+  ln -s /opt/codex-ui-linux-port/bin/codex-ui-linux "$target/usr/bin/codex-ui-linux"
+  ln -s /opt/codex-ui-linux-port/bin/codexui-update "$target/usr/bin/codexui-update"
+  install -m 644 "$PKGROOT/opt/codex-ui-linux-port/share/codex-ui-linux.desktop" "$target/usr/share/applications/codex-ui-linux.desktop"
+  if [[ -f "$PKGROOT/opt/codex-ui-linux-port/share/icons/hicolor/scalable/apps/codex-ui-linux.svg" ]]; then
+    install -m 644 "$PKGROOT/opt/codex-ui-linux-port/share/icons/hicolor/scalable/apps/codex-ui-linux.svg" "$target/usr/share/icons/hicolor/scalable/apps/codex-ui-linux.svg"
+  fi
+  cat > "$target/opt/codex-ui-linux-port/manifest.json" <<JSON
+{"version":"$VERSION","sourceDmgSha256":"$DMG_SHA","package":"$NAME"}
+JSON
+}
+
+arch_root="$DIST/arch-root"
+stage_common "$arch_root"
+mkdir -p "$arch_root/.PKGINFO"
+cat > "$DIST/.PKGINFO" <<EOF
+pkgname = $NAME
+pkgbase = $NAME
+pkgver = $VERSION-1
+pkgdesc = Unofficial Codex UI Linux port
+url = https://github.com/0xCyberBerserker/codex-ui-linux-port
+builddate = $(date +%s)
+packager = private automation
+size = $(du -sb "$arch_root" | awk '{print $1}')
+arch = $ARCH
+license = custom
+depend = electron42
+depend = nodejs
+depend = curl
+depend = jq
+depend = desktop-file-utils
+EOF
+cp "$DIST/.PKGINFO" "$arch_root/.PKGINFO"
+tar --zstd -cf "$DIST/${NAME}-${VERSION}-1-${ARCH}.pkg.tar.zst" -C "$arch_root" .
+
+deb_root="$DIST/deb-root"
+if command -v dpkg-deb >/dev/null 2>&1; then
+  stage_common "$deb_root"
+  mkdir -p "$deb_root/DEBIAN"
+  cat > "$deb_root/DEBIAN/control" <<EOF
+Package: $NAME
+Version: $VERSION
+Section: devel
+Priority: optional
+Architecture: amd64
+Depends: electron42, nodejs, curl, jq, desktop-file-utils
+Maintainer: private automation
+Description: Unofficial Codex UI Linux port
+ Private packaging automation for Codex UI.
+EOF
+  dpkg-deb --build "$deb_root" "$DIST/${NAME}_${VERSION}_amd64.deb" >/dev/null
+else
+  echo "build-packages: dpkg-deb not found; deb package skipped" >&2
+fi
+
+rpm_root="$DIST/rpm-root"
+if command -v rpmbuild >/dev/null 2>&1; then
+  stage_common "$rpm_root"
+  tar -C "$rpm_root" -czf "$DIST/${NAME}-${VERSION}-payload.tar.gz" .
+  cat > "$DIST/${NAME}.spec" <<EOF
+Name: $NAME
+Version: $VERSION
+Release: 1
+Summary: Unofficial Codex UI Linux port
+License: Custom
+BuildArch: x86_64
+Requires: electron42
+Requires: nodejs
+Requires: curl
+Requires: jq
+Requires: desktop-file-utils
+
+%description
+Private packaging automation for Codex UI.
+
+%prep
+
+%build
+
+%install
+mkdir -p %{buildroot}
+tar -xzf %{_sourcedir}/${NAME}-${VERSION}-payload.tar.gz -C %{buildroot}
+
+%files
+/opt/codex-ui-linux-port
+/usr/bin/codex-ui-linux
+/usr/bin/codexui-update
+/usr/share/applications/codex-ui-linux.desktop
+/usr/share/icons/hicolor/scalable/apps/codex-ui-linux.svg
+EOF
+
+  rpmbuild --define "_topdir $DIST/rpmbuild" \
+    --define "_sourcedir $DIST" \
+    --define "_rpmdir $DIST" \
+    -bb "$DIST/${NAME}.spec" >/dev/null
+  find "$DIST" -name '*.rpm' -type f -exec cp {} "$DIST/${NAME}-${VERSION}-1.x86_64.rpm" \;
+else
+  echo "build-packages: rpmbuild not found; rpm package skipped" >&2
+fi
+
+rm -rf "$DIST/arch-root" "$DIST/deb-root" "$DIST/rpm-root" "$DIST/rpmbuild"

@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+DMG=""
+VERSION=""
+WORKDIR="$ROOT/build/work"
+DIST="$ROOT/dist"
+
+usage() {
+  cat <<'EOF'
+Usage:
+  scripts/build-from-dmg --dmg /path/to/Codex.dmg [--version VERSION]
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --dmg) shift; DMG="${1:-}" ;;
+    --version) shift; VERSION="${1:-}" ;;
+    --help|-h) usage; exit 0 ;;
+    *) echo "build-from-dmg: unknown option: $1" >&2; usage >&2; exit 2 ;;
+  esac
+  shift
+done
+
+[[ -f "$DMG" ]] || { echo "build-from-dmg: DMG not found: $DMG" >&2; exit 2; }
+
+need() {
+  command -v "$1" >/dev/null 2>&1 || { echo "build-from-dmg: missing command: $1" >&2; exit 2; }
+}
+
+need 7z
+need node
+need npm
+need patch
+need tar
+need sha256sum
+
+rm -rf "$WORKDIR"
+mkdir -p "$WORKDIR" "$DIST"
+
+dmg_sha="$(sha256sum "$DMG" | awk '{print $1}')"
+extract="$WORKDIR/dmg"
+mkdir -p "$extract"
+7z x -y -o"$extract" "$DMG" >/dev/null
+
+asar_path="$(find "$extract" -path '*/Codex.app/Contents/Resources/app.asar' -type f | head -n 1)"
+unpacked_path="$(find "$extract" -path '*/Codex.app/Contents/Resources/app.asar.unpacked' -type d | head -n 1)"
+icon_path="$(find "$extract" -path '*/Codex.app/Contents/Resources/icon.icns' -type f | head -n 1)"
+
+[[ -f "$asar_path" ]] || { echo "build-from-dmg: app.asar not found" >&2; exit 1; }
+
+app_src="$WORKDIR/app-src"
+npx --yes @electron/asar extract "$asar_path" "$app_src"
+
+if [[ -z "$VERSION" ]]; then
+  VERSION="$(node -e 'const p=require(process.argv[1]); process.stdout.write(p.version)' "$app_src/package.json")"
+fi
+
+install_root="$WORKDIR/pkgroot/opt/codex-ui-linux-port"
+mkdir -p "$install_root"
+cp -a "$app_src" "$install_root/app-src"
+if [[ -n "$unpacked_path" ]]; then
+  mkdir -p "$install_root/app-src/app.asar.unpacked"
+  cp -a "$unpacked_path"/. "$install_root/app-src/app.asar.unpacked/"
+fi
+
+pushd "$install_root/app-src" >/dev/null
+npm install --omit=dev better-sqlite3@12.9.0 node-pty@1.1.0
+"$ROOT/scripts/patch-native-modules" "$install_root/app-src"
+npx --yes @electron/rebuild -v 42.1.0 -m node_modules/better-sqlite3
+npx --yes @electron/rebuild -v 42.1.0 -m node_modules/node-pty
+popd >/dev/null
+
+"$ROOT/scripts/apply-linux-patches" "$install_root" "$VERSION"
+"$ROOT/scripts/build-packages" "$WORKDIR/pkgroot" "$VERSION" "$dmg_sha"
+
+cat > "$DIST/manifest.json" <<JSON
+{
+  "version": "$VERSION",
+  "sourceDmgSha256": "$dmg_sha",
+  "generatedAtUtc": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "packageName": "codex-ui-linux-port"
+}
+JSON
+
+(cd "$DIST" && sha256sum *.deb *.rpm *.pkg.tar.zst manifest.json 2>/dev/null > checksums.txt)
+echo "build-from-dmg: artifacts written to $DIST"

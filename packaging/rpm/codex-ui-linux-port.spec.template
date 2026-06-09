@@ -1,0 +1,29 @@
+Name: codex-ui-linux-port
+Version: @VERSION@
+Release: 1
+Summary: Unofficial Codex UI Linux port
+License: Custom
+BuildArch: x86_64
+Requires: electron42
+Requires: nodejs
+Requires: curl
+Requires: jq
+Requires: desktop-file-utils
+
+%description
+Private packaging automation for Codex UI.
+
+%prep
+
+%build
+
+%install
+mkdir -p %{buildroot}
+tar -xzf %{_sourcedir}/codex-ui-linux-port-%{version}-payload.tar.gz -C %{buildroot}
+
+%files
+/opt/codex-ui-linux-port
+/usr/bin/codex-ui-linux
+/usr/bin/codexui-update
+/usr/share/applications/codex-ui-linux.desktop
+/usr/share/icons/hicolor/scalable/apps/codex-ui-linux.svg

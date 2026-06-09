@@ -1,0 +1,41 @@
+# Build and extraction outputs
+build/
+dist/
+tmp/
+work/
+out/
+*.dmg
+*.asar
+*.deb
+*.rpm
+*.pkg.tar.zst
+*.tar.xz
+*.zip
+
+# Dependency trees and caches
+node_modules/
+.npm/
+.pnpm-store/
+.cache/
+
+# Local runtime state
+.codex/
+Codex/
+Codex.app/
+codex-ui-linux-port-*/
+*.log
+*.png
+*.jpg
+*.jpeg
+*.webp
+
+# Secrets and host-specific files
+.env
+.env.*
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+known_hosts
+config.local.*
+

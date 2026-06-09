@@ -1,0 +1,202 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO="${CODEXUI_REPO:-0xCyberBerserker/codex-ui-linux-port}"
+PROGRAM="codexui-update"
+MODE="install"
+FORCE=0
+SMOKE=0
+REQUESTED_VERSION=""
+
+usage() {
+  cat <<'EOF'
+Usage:
+  codexui-update [--check] [--force] [--version VERSION] [--smoke]
+
+Options:
+  --check            Print current/latest versions without installing.
+  --force            Reinstall the selected release.
+  --version VERSION  Install a specific release tag/version.
+  --smoke            Run a temporary-profile startup smoke test after install.
+  --help             Show this help.
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --check) MODE="check" ;;
+    --force) FORCE=1 ;;
+    --version)
+      shift
+      REQUESTED_VERSION="${1:-}"
+      [[ -n "$REQUESTED_VERSION" ]] || { echo "$PROGRAM: --version requires a value" >&2; exit 2; }
+      ;;
+    --smoke) SMOKE=1 ;;
+    --help|-h) usage; exit 0 ;;
+    --aur)
+      echo "$PROGRAM: AUR mode is reserved until the AUR package is published" >&2
+      exit 2
+      ;;
+    *) echo "$PROGRAM: unknown option: $1" >&2; usage >&2; exit 2 ;;
+  esac
+  shift
+done
+
+need() {
+  command -v "$1" >/dev/null 2>&1 || { echo "$PROGRAM: missing required command: $1" >&2; exit 2; }
+}
+
+need uname
+need mktemp
+need sed
+need grep
+need sha256sum
+need jq
+
+arch="$(uname -m)"
+if [[ "$arch" != "x86_64" ]]; then
+  echo "$PROGRAM: unsupported architecture: $arch" >&2
+  exit 2
+fi
+
+if [[ -r /etc/os-release ]]; then
+  # shellcheck disable=SC1091
+  . /etc/os-release
+else
+  echo "$PROGRAM: /etc/os-release not found" >&2
+  exit 2
+fi
+
+id="${ID:-}"
+id_like="${ID_LIKE:-}"
+pkg_kind=""
+install_cmd=()
+deps=()
+
+case " $id $id_like " in
+  *" arch "*|*" cachyos "*)
+    pkg_kind="pkg.tar.zst"
+    deps=(electron42 nodejs curl jq desktop-file-utils)
+    install_cmd=(pacman -U --needed)
+    ;;
+  *" debian "*|*" ubuntu "*)
+    pkg_kind="deb"
+    deps=(electron42 nodejs curl jq desktop-file-utils)
+    install_cmd=(apt-get install -y)
+    ;;
+  *" fedora "*|*" rhel "*|*" centos "*)
+    pkg_kind="rpm"
+    deps=(electron42 nodejs curl jq desktop-file-utils)
+    install_cmd=(dnf install -y)
+    ;;
+  *)
+    echo "$PROGRAM: unsupported distro: ID=$id ID_LIKE=$id_like" >&2
+    exit 2
+    ;;
+esac
+
+current_version() {
+  if command -v codex-ui-linux >/dev/null 2>&1; then
+    codex-ui-linux --version 2>/dev/null | sed -n 's/.*\([0-9][0-9]\.[0-9][0-9][0-9]\.[0-9][0-9]*\).*/\1/p' | head -n 1
+  fi
+}
+
+auth_ready=0
+if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+  auth_ready=1
+elif [[ -n "${GITHUB_TOKEN:-}${GH_TOKEN:-}" ]]; then
+  auth_ready=1
+fi
+
+if [[ "$auth_ready" -ne 1 ]]; then
+  echo "$PROGRAM: private release access requires 'gh auth login' or GITHUB_TOKEN/GH_TOKEN" >&2
+  exit 2
+fi
+
+api_json="$(mktemp)"
+trap 'rm -f "$api_json"; [[ -n "${tmpdir:-}" ]] && rm -rf "$tmpdir"' EXIT
+
+if [[ -n "$REQUESTED_VERSION" ]]; then
+  tag="$REQUESTED_VERSION"
+  [[ "$tag" == v* ]] || tag="v$tag"
+  gh api "repos/$REPO/releases/tags/$tag" > "$api_json"
+else
+  gh api "repos/$REPO/releases/latest" > "$api_json"
+  tag="$(jq -r '.tag_name' "$api_json")"
+fi
+
+latest_version="${tag#v}"
+installed_version="$(current_version || true)"
+
+if [[ "$MODE" == "check" ]]; then
+  echo "installed=${installed_version:-none}"
+  echo "latest=$latest_version"
+  echo "package=$pkg_kind"
+  exit 0
+fi
+
+if [[ "$FORCE" -ne 1 && -n "$installed_version" && "$installed_version" == "$latest_version" ]]; then
+  echo "$PROGRAM: already up to date ($installed_version)"
+  [[ "$SMOKE" -eq 1 ]] || exit 0
+fi
+
+tmpdir="$(mktemp -d)"
+asset_pattern="*${latest_version}*.${pkg_kind}"
+
+echo "$PROGRAM: downloading $asset_pattern from $REPO $tag"
+gh release download "$tag" --repo "$REPO" --pattern "$asset_pattern" --pattern "checksums.txt" --dir "$tmpdir" --clobber
+
+package="$(find "$tmpdir" -maxdepth 1 -type f -name "*.${pkg_kind}" | head -n 1)"
+[[ -n "$package" ]] || { echo "$PROGRAM: package asset not found for $pkg_kind" >&2; exit 1; }
+
+(cd "$tmpdir" && sha256sum -c checksums.txt --ignore-missing)
+
+missing=()
+for dep in "${deps[@]}"; do
+  case "$pkg_kind" in
+    pkg.tar.zst) pacman -Qi "$dep" >/dev/null 2>&1 || missing+=("$dep") ;;
+    deb) dpkg -s "$dep" >/dev/null 2>&1 || missing+=("$dep") ;;
+    rpm) rpm -q "$dep" >/dev/null 2>&1 || missing+=("$dep") ;;
+  esac
+done
+
+elevate=()
+if [[ "$(id -u)" -eq 0 ]]; then
+  elevate=()
+elif command -v sudo >/dev/null 2>&1; then
+  elevate=(sudo)
+elif command -v pkexec >/dev/null 2>&1; then
+  elevate=(pkexec)
+else
+  echo "$PROGRAM: root privileges required, but sudo/pkexec not found" >&2
+  exit 2
+fi
+
+if [[ "${#missing[@]}" -gt 0 ]]; then
+  echo "$PROGRAM: installing missing dependencies: ${missing[*]}"
+  case "$pkg_kind" in
+    pkg.tar.zst) "${elevate[@]}" pacman -S --needed "${missing[@]}" ;;
+    deb) "${elevate[@]}" apt-get install -y "${missing[@]}" ;;
+    rpm) "${elevate[@]}" dnf install -y "${missing[@]}" ;;
+  esac
+fi
+
+echo "$PROGRAM: installing $package"
+"${elevate[@]}" "${install_cmd[@]}" "$package"
+
+command -v codex-ui-linux >/dev/null 2>&1 || { echo "$PROGRAM: codex-ui-linux not found after install" >&2; exit 1; }
+command -v codexui-update >/dev/null 2>&1 || { echo "$PROGRAM: codexui-update not found after install" >&2; exit 1; }
+
+if [[ "$SMOKE" -eq 1 ]]; then
+  profile="$(mktemp -d)"
+  log="$tmpdir/smoke.log"
+  CODEX_ELECTRON_USER_DATA_PATH="$profile" timeout 20s codex-ui-linux >"$log" 2>&1 || true
+  if ! grep -E 'Codex CLI initialized|window ready-to-show' "$log" >/dev/null 2>&1; then
+    echo "$PROGRAM: smoke test did not find a successful startup marker" >&2
+    tail -n 80 "$log" >&2
+    exit 1
+  fi
+fi
+
+echo "$PROGRAM: installed $latest_version"
+

@@ -1,0 +1,117 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+INSTALL_ROOT="${1:?install root required}"
+VERSION="${2:?version required}"
+APP_SRC="$INSTALL_ROOT/app-src"
+
+mkdir -p "$INSTALL_ROOT/bin" "$INSTALL_ROOT/share/icons/hicolor/scalable/apps"
+
+cat > "$INSTALL_ROOT/bin/codex-cli-wrapper" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+candidates=()
+for root in "$HOME/.local/lib/node_modules/@openai/codex" "$HOME/.local/share/pnpm/global" "/usr/lib/node_modules/@openai/codex"; do
+  if [[ -d "$root" && -f "$root/bin/codex.js" ]]; then
+    candidates+=("$root")
+  elif [[ -d "$root" ]]; then
+    while IFS= read -r found; do
+      candidates+=("$found")
+    done < <(find "$root" -type f -path '*/node_modules/@openai/codex/bin/codex.js' -printf '%h/..\n' 2>/dev/null)
+  fi
+done
+
+if [[ "${#candidates[@]}" -eq 0 ]]; then
+  echo "codex-cli-wrapper: @openai/codex is not installed" >&2
+  exit 127
+fi
+
+selected="$(printf '%s\n' "${candidates[@]}" | sort -V | tail -n 1)"
+exec /usr/bin/node "$selected/bin/codex.js" "$@"
+EOF
+
+cat > "$INSTALL_ROOT/bin/codex-ui-linux" <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+
+APP_ROOT="/opt/codex-ui-linux-port"
+ELECTRON_BIN="\${ELECTRON_BIN:-electron42}"
+CLI_WRAPPER="\$APP_ROOT/bin/codex-cli-wrapper"
+
+if [[ "\${1:-}" == "--version" ]]; then
+  echo "codex-ui-linux $VERSION"
+  exit 0
+fi
+
+export BUILD_FLAVOR=prod
+export CODEX_CLI_PATH="\$CLI_WRAPPER"
+export LANGUAGE="\${LANGUAGE:-es_ES:es}"
+export LANG="\${LANG:-es_ES.UTF-8}"
+export LC_MESSAGES="\${LC_MESSAGES:-es_ES.UTF-8}"
+
+exec "\$ELECTRON_BIN" --lang=es-ES --ozone-platform=x11 --disable-vulkan --force-device-scale-factor=1 "\$APP_ROOT/app-src" "\$@"
+EOF
+
+chmod 755 "$INSTALL_ROOT/bin/codex-cli-wrapper" "$INSTALL_ROOT/bin/codex-ui-linux"
+
+if [[ -f "$APP_SRC/.vite/build/bootstrap.js" ]]; then
+  node - "$APP_SRC/.vite/build/bootstrap.js" <<'NODE'
+const fs = require("fs");
+const file = process.argv[2];
+let text = fs.readFileSync(file, "utf8");
+const before = "let i=require(`electron`),a=require(`node:path`);";
+const after = "let i=require(`electron`);try{i.Menu.setApplicationMenu(null),i.app.on(`browser-window-created`,(e,t)=>{try{t.setMenuBarVisibility(!1),t.removeMenu?.()}catch{}})}catch{}let a=require(`node:path`);";
+if (text.includes(before) && !text.includes("Menu.setApplicationMenu(null)")) {
+  text = text.replace(before, after);
+  fs.writeFileSync(file, text, "utf8");
+}
+NODE
+fi
+
+shell_css="$(find "$APP_SRC/webview/assets" -maxdepth 1 -name 'app-shell-*.css' | head -n 1)"
+if [[ -n "$shell_css" ]] && ! grep -q "Local Linux port visual override" "$shell_css"; then
+  cat >> "$shell_css" <<'CSS'
+
+/* Local Linux port visual override. */
+:root[data-codex-window-type=electron]{
+  --vscode-font-family:"Inter","OpenAI Sans","Segoe UI",system-ui,sans-serif;
+  --vscode-font-weight:400;
+  --vscode-font-size:13px;
+  --vscode-editor-font-size:12px;
+  --height-toolbar:40px;
+  --height-toolbar-sm:34px;
+  --spacing-token-sidebar:280px;
+  --codex-titlebar-tint:var(--color-token-main-surface-primary);
+}
+:root[data-codex-window-type=electron] body{background:var(--color-token-main-surface-primary);-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
+:root[data-codex-window-type=electron] .app-header-tint{background:var(--color-token-main-surface-primary)!important;border-bottom:1px solid var(--color-token-border-default,transparent)}
+:root[data-codex-window-type=electron] .app-shell-left-panel{background:var(--color-token-main-surface-primary)!important;overflow:hidden!important;border-right:1px solid var(--color-token-border-default,transparent)}
+:root[data-codex-window-type=electron] .app-shell-left-panel:after{display:none!important}
+:root[data-codex-window-type=electron] .app-shell-left-panel button,
+:root[data-codex-window-type=electron] .app-shell-left-panel [role=button],
+:root[data-codex-window-type=electron] .app-shell-left-panel a{font-size:13px!important;line-height:1.35!important}
+:root[data-codex-window-type=electron] .main-surface{border-top-left-radius:10px!important;border-bottom-left-radius:10px!important}
+CSS
+fi
+
+cat > "$INSTALL_ROOT/share/codex-ui-linux.desktop" <<'EOF'
+[Desktop Entry]
+Type=Application
+Name=Codex UI
+Comment=Codex UI Linux Port
+Exec=codex-ui-linux %U
+Icon=codex-ui-linux
+Terminal=false
+Categories=Development;Utility;
+StartupNotify=true
+EOF
+
+cat > "$INSTALL_ROOT/share/icons/hicolor/scalable/apps/codex-ui-linux.svg" <<'EOF'
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#111827"/>
+  <path d="M256 72 414 164v184L256 440 98 348V164L256 72Z" fill="none" stroke="#67e8f9" stroke-width="34" stroke-linejoin="round"/>
+  <path d="M256 144 352 200v112l-96 56-96-56V200l96-56Z" fill="none" stroke="#a7f3d0" stroke-width="28" stroke-linejoin="round"/>
+  <circle cx="256" cy="256" r="38" fill="#67e8f9"/>
+</svg>
+EOF

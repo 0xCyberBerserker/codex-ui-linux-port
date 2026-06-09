@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+
+if ! command -v rg >/dev/null 2>&1; then
+  echo "privacy-audit: rg is required" >&2
+  exit 2
+fi
+
+blocked_regex=(
+  '/home/[A-Za-z0-9._-]+'
+  '\.codex'
+  'CODEX_ELECTRON_USER_DATA_PATH=.*/'
+  'gh[opsu]_[A-Za-z0-9_]{20,}'
+  'sk-[A-Za-z0-9_-]{20,}'
+  '-----BEGIN (RSA |OPENSSH |EC |DSA )?PRIVATE KEY-----'
+  'codex-ui-linux-port-current'
+  'Descargas/Codex\.dmg'
+)
+
+allow_files=(
+  "README.md"
+  ".gitignore"
+  "docs/security.md"
+  "docs/usage.md"
+  "scripts/privacy-audit"
+  "scripts/update-aur-metadata"
+)
+
+tmp="$(mktemp)"
+trap 'rm -f "$tmp"' EXIT
+
+git ls-files --others --cached --exclude-standard > "$tmp"
+
+failed=0
+while IFS= read -r file; do
+  [[ -f "$file" ]] || continue
+  case "$file" in
+    .git/*|build/*|dist/*|tmp/*|work/*|out/*) continue ;;
+  esac
+  for pattern in "${blocked_regex[@]}"; do
+    if rg -n --pcre2 "$pattern" "$file" >/tmp/codexui-privacy-hit 2>/dev/null; then
+      allowed=0
+      for allow in "${allow_files[@]}"; do
+        [[ "$file" == "$allow" ]] && allowed=1
+      done
+      if [[ "$allowed" -eq 0 ]]; then
+        echo "privacy-audit: blocked pattern in $file" >&2
+        cat /tmp/codexui-privacy-hit >&2
+        failed=1
+      fi
+    fi
+  done
+done < "$tmp"
+
+rm -f /tmp/codexui-privacy-hit
+
+if [[ "$failed" -ne 0 ]]; then
+  exit 1
+fi
+
+echo "privacy-audit: clean"

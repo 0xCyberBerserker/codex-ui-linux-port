@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+VERSION="$(jq -r '.codexUiVersion' "$ROOT/VERSION.json")"
+PKGBUILD="$ROOT/packaging/aur/PKGBUILD"
+
+sed -i "s/^pkgver=.*/pkgver=${VERSION}/" "$PKGBUILD"
+sed -i "s/^pkgrel=.*/pkgrel=1/" "$PKGBUILD"
+
+pushd "$ROOT/packaging/aur" >/dev/null
+makepkg --printsrcinfo > .SRCINFO
+popd >/dev/null
+
+"$ROOT/scripts/privacy-audit"
+echo "update-aur-metadata: refreshed $VERSION"
+

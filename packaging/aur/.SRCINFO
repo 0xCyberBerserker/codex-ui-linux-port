@@ -1,0 +1,17 @@
+pkgbase = codex-ui-linux-port-bin
+	pkgdesc = Unofficial Codex UI Linux port
+	pkgver = 26.602.71036
+	pkgrel = 1
+	url = https://github.com/0xCyberBerserker/codex-ui-linux-port
+	arch = x86_64
+	license = custom
+	depends = electron42
+	depends = nodejs
+	depends = curl
+	depends = jq
+	depends = desktop-file-utils
+	source = codex-ui-linux-port-bin-26.602.71036-1-x86_64.pkg.tar.zst::https://github.com/0xCyberBerserker/codex-ui-linux-port/releases/download/v26.602.71036/codex-ui-linux-port-26.602.71036-1-x86_64.pkg.tar.zst
+	sha256sums = SKIP
+
+pkgname = codex-ui-linux-port-bin
+

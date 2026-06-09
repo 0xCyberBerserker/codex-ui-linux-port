@@ -1,0 +1,89 @@
+name: Build Codex UI Linux packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      dmg_url:
+        description: "Optional DMG URL override"
+        required: false
+        type: string
+      version:
+        description: "Optional version override"
+        required: false
+        type: string
+  schedule:
+    - cron: "17 4 * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y p7zip-full nodejs npm jq curl dpkg-dev rpm patch zstd
+
+      - name: Resolve source DMG
+        id: source
+        env:
+          DMG_URL_INPUT: ${{ inputs.dmg_url }}
+          VERSION_INPUT: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if [ -n "${DMG_URL_INPUT:-}" ]; then
+            echo "dmg_url=$DMG_URL_INPUT" >> "$GITHUB_OUTPUT"
+            echo "version=${VERSION_INPUT:-manual}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          appcast="$(jq -r '.appcastUrl' VERSION.json)"
+          curl -fsSL "$appcast" -o appcast.xml
+          url="$(grep -Eo 'https://[^"]+\.dmg[^"]*' appcast.xml | head -n 1)"
+          version="$(grep -Eo 'sparkle:shortVersionString="[^"]+"' appcast.xml | head -n 1 | cut -d '"' -f2)"
+          test -n "$url"
+          test -n "$version"
+          echo "dmg_url=$url" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Skip existing release
+        id: existing
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.source.outputs.version }}
+        run: |
+          if gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download DMG
+        if: steps.existing.outputs.exists != 'true'
+        run: |
+          curl -fL "${{ steps.source.outputs.dmg_url }}" -o Codex.dmg
+
+      - name: Build packages
+        if: steps.existing.outputs.exists != 'true'
+        run: |
+          scripts/build-from-dmg --dmg Codex.dmg --version "${{ steps.source.outputs.version }}"
+
+      - name: Privacy audit
+        if: steps.existing.outputs.exists != 'true'
+        run: scripts/privacy-audit
+
+      - name: Create release
+        if: steps.existing.outputs.exists != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.source.outputs.version }}
+        run: |
+          gh release create "v$VERSION" dist/* Codex.dmg \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Codex UI Linux Port $VERSION" \
+            --notes "Private automated Linux package build for Codex UI $VERSION."
+
