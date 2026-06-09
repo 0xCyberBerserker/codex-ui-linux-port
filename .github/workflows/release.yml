@@ -105,7 +105,7 @@ jobs:
           gh release create "v$VERSION" dist/* \
             --repo "$GITHUB_REPOSITORY" \
             --title "Codex UI Linux Port $VERSION" \
-            --notes "Private automated Linux package build for Codex UI $VERSION."
+            --notes "Unofficial automated Linux package build for Codex UI $VERSION."
 
       - name: Refresh release
         if: steps.freshness.outputs.fresh != 'true' && steps.freshness.outputs.exists == 'true'
@@ -119,4 +119,4 @@ jobs:
           gh release edit "v$VERSION" \
             --repo "$GITHUB_REPOSITORY" \
             --title "Codex UI Linux Port $VERSION" \
-            --notes "Private automated Linux package build for Codex UI $VERSION. Source DMG SHA256: ${{ steps.freshness.outputs.dmg_sha }}"
+            --notes "Unofficial automated Linux package build for Codex UI $VERSION. Source DMG SHA256: ${{ steps.freshness.outputs.dmg_sha }}"

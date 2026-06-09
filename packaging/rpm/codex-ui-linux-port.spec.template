@@ -11,7 +11,7 @@ Requires: jq
 Requires: desktop-file-utils
 
 %description
-Private packaging automation for Codex UI.
+Unofficial packaging automation for Codex UI.
 
 %prep
 

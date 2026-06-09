@@ -4,7 +4,6 @@ Section: devel
 Priority: optional
 Architecture: amd64
 Depends: electron42, nodejs, curl, jq, desktop-file-utils
-Maintainer: private automation
+Maintainer: unofficial automation
 Description: Unofficial Codex UI Linux port
- Private packaging automation for Codex UI.
-
+ Unofficial packaging automation for Codex UI.

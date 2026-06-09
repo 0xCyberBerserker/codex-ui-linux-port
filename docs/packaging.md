@@ -22,7 +22,9 @@ The Arch/CachyOS package is the primary target. Debian and Fedora packages are g
 
 ## Release Build Authority
 
-GitHub Actions is the authoritative builder for release artifacts. A release run must generate and validate:
+GitHub Actions is the authoritative builder for release artifacts. While the repository is private, generated releases are private. If the repository becomes public later, the same workflow remains authoritative, but release asset visibility must follow the publication decision in `docs/publication.md`.
+
+A release run must generate and validate:
 
 - `Codex-$VERSION.dmg`
 - `codex-ui-linux-port-$VERSION-1-x86_64.pkg.tar.zst`

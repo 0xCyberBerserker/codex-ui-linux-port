@@ -6,7 +6,7 @@
 codexui-update
 ```
 
-The updater detects the host OS, downloads the latest compatible package from the private GitHub release, verifies checksums, installs the package, and checks the installed command.
+The updater detects the host OS, downloads the latest compatible package from the GitHub release, verifies checksums, installs the package, and checks the installed command.
 
 ## Supported Systems
 
@@ -16,7 +16,7 @@ The updater detects the host OS, downloads the latest compatible package from th
 
 ## Authentication
 
-Private release access requires GitHub authentication.
+While this repository is private, release access requires GitHub authentication.
 
 Recommended:
 
@@ -37,4 +37,3 @@ codexui-update --smoke
 ```
 
 The smoke test launches Codex UI with a temporary profile and checks for a successful startup log.
-

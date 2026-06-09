@@ -1,8 +1,10 @@
 # Codex UI Linux Port
 
-Private automation for rebuilding the macOS Codex UI DMG into lightweight Linux packages.
+Private-first automation for rebuilding the macOS Codex UI DMG into lightweight Linux packages.
 
-This repository exists because Codex UI changes frequently and the Linux workstation workflow needs a repeatable update path. It stores only scripts, patches, package metadata, and documentation. Upstream Codex binaries are not committed to git.
+This repository exists because Codex UI changes frequently and Linux workstation users need a repeatable update path. It stores only scripts, patches, package metadata, and documentation. Upstream Codex binaries are not committed to git.
+
+The repository is currently private while the automation is validated. It is intended to become public later after the publication checklist is complete, redistribution constraints are reviewed, and all maintainer-local assumptions are removed.
 
 ## Targets
 
@@ -13,7 +15,7 @@ This repository exists because Codex UI changes frequently and the Linux worksta
 
 ## Quick Use
 
-Install or update from the latest private GitHub release:
+Install or update from the latest GitHub release:
 
 ```bash
 codexui-update
@@ -31,7 +33,7 @@ Run a smoke test after install:
 codexui-update --smoke
 ```
 
-Private release access requires one of:
+While this repository is private, release access requires one of:
 
 - `gh` authenticated with repository access
 - `GITHUB_TOKEN`
@@ -59,6 +61,17 @@ scripts/privacy-audit
 
 The audit blocks local paths, Codex runtime state, token-like strings, private keys, and known personal/work data patterns.
 
+## Publication Status
+
+Current status:
+
+- Repository visibility: private
+- Release visibility: private
+- Public release: planned, not ready
+- AUR package: prepared, not published
+
+Before making the repository public, complete `docs/publication.md`.
+
 ## Disclaimer
 
-This is an unofficial private automation wrapper and packaging toolkit. Codex, the Codex UI app, and upstream binaries belong to OpenAI. This repository does not claim endorsement, ownership, or official support.
+This is an unofficial automation wrapper and packaging toolkit. Codex, the Codex UI app, and upstream binaries belong to OpenAI. This repository does not claim endorsement, ownership, or official support.

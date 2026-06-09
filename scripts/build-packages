@@ -37,7 +37,7 @@ pkgver = $VERSION-1
 pkgdesc = Unofficial Codex UI Linux port
 url = https://github.com/0xCyberBerserker/codex-ui-linux-port
 builddate = $(date +%s)
-packager = private automation
+packager = unofficial automation
 size = $(du -sb "$arch_root" | awk '{print $1}')
 arch = $ARCH
 license = custom
@@ -61,9 +61,9 @@ Section: devel
 Priority: optional
 Architecture: amd64
 Depends: electron42, nodejs, curl, jq, desktop-file-utils
-Maintainer: private automation
+Maintainer: unofficial automation
 Description: Unofficial Codex UI Linux port
- Private packaging automation for Codex UI.
+ Unofficial packaging automation for Codex UI.
 EOF
   dpkg-deb --build "$deb_root" "$DIST/${NAME}_${VERSION}_amd64.deb" >/dev/null
 else
@@ -88,7 +88,7 @@ Requires: jq
 Requires: desktop-file-utils
 
 %description
-Private packaging automation for Codex UI.
+Unofficial packaging automation for Codex UI.
 
 %prep
 

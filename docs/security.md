@@ -16,3 +16,12 @@ scripts/privacy-audit
 
 Release binaries should be attached as GitHub release assets, not committed to git.
 
+## Public Release Boundary
+
+This repository is currently private. Before changing repository or release visibility, complete `docs/publication.md` and rerun:
+
+```bash
+scripts/privacy-audit
+```
+
+Do not publish maintainer-local paths, Codex runtime state, chat data, employer context, tokens, credentials, or extracted app trees.
