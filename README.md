@@ -24,6 +24,12 @@ Codex UI changes frequently. Linux users need a repeatable path that can:
 - verify artifacts before release
 - keep private/runtime data out of git
 
+## Operational Rationale
+
+This project was developed as work-adjacent tooling during unavoidable waiting periods such as long builds, dependency installs, and CI feedback loops. The goal is to use that downtime productively: keep the daily Linux workstation stable, reduce repeated manual update work, and improve the reliability of a tool used for day-to-day engineering tasks.
+
+The repository is intentionally auditable, private during validation, and scoped to automation that improves the maintainer's working environment without storing employer data, chats, credentials, or runtime state.
+
 ## Install Or Update
 
 ```bash

@@ -4,6 +4,12 @@ Codex UI Linux Port is an unofficial packaging automation project for Linux syst
 
 The project exists to make frequent Codex UI updates repeatable on Linux without committing upstream binaries or maintainer-local runtime data to git. It uses GitHub Actions as the release authority, validates generated packages, and keeps publication readiness explicit.
 
+## Operational Rationale
+
+This repository was built as work-adjacent tooling during unavoidable waiting periods such as long builds, dependency installs, and CI feedback loops. The intent is to use that otherwise idle time productively by improving a daily engineering workstation, reducing manual update friction, and keeping Codex UI reliable on Linux.
+
+The project remains private during validation and does not store employer data, Codex chats, credentials, local runtime state, or host-specific private material.
+
 ## Scope
 
 The project provides:
