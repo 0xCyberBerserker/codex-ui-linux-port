@@ -39,7 +39,7 @@ Private release access requires one of:
 
 ## Build From A DMG
 
-GitHub Actions is the authoritative release builder. Scheduled and manual workflow runs download the upstream DMG, build the Arch/CachyOS, Debian, and RPM packages, validate the full artifact set, run the privacy audit, and publish a private release.
+GitHub Actions is the authoritative release builder. Scheduled and manual workflow runs always download the current upstream DMG, compare its SHA256 with the existing release manifest, build the Arch/CachyOS, Debian, and RPM packages when needed, validate the full artifact set, run the privacy audit, and publish or refresh a private release.
 
 Local builds are for bootstrap, debugging, and smoke testing only:
 

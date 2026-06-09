@@ -83,14 +83,18 @@ cp -a "$native_build/node_modules/node-pty" "$install_root/app-src/node_modules/
 "$ROOT/scripts/apply-linux-patches" "$install_root" "$VERSION"
 "$ROOT/scripts/build-packages" "$WORKDIR/pkgroot" "$VERSION" "$dmg_sha"
 
+source_dmg_file="Codex-${VERSION}.dmg"
+cp "$DMG" "$DIST/$source_dmg_file"
+
 cat > "$DIST/manifest.json" <<JSON
 {
   "version": "$VERSION",
+  "sourceDmgFile": "$source_dmg_file",
   "sourceDmgSha256": "$dmg_sha",
   "generatedAtUtc": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
   "packageName": "codex-ui-linux-port"
 }
 JSON
 
-(cd "$DIST" && find . -maxdepth 1 -type f \( -name '*.deb' -o -name '*.rpm' -o -name '*.pkg.tar.zst' -o -name 'manifest.json' \) -printf '%P\n' | sort | xargs -r sha256sum > checksums.txt)
+(cd "$DIST" && find . -maxdepth 1 -type f \( -name '*.dmg' -o -name '*.deb' -o -name '*.rpm' -o -name '*.pkg.tar.zst' -o -name 'manifest.json' \) -printf '%P\n' | sort | xargs -r sha256sum > checksums.txt)
 echo "build-from-dmg: artifacts written to $DIST"

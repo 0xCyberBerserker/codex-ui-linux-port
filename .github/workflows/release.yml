@@ -50,44 +50,73 @@ jobs:
           echo "dmg_url=$url" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
-      - name: Skip existing release
-        id: existing
+      - name: Download DMG
+        run: |
+          curl -fL "${{ steps.source.outputs.dmg_url }}" -o Codex.dmg
+
+      - name: Check release freshness
+        id: freshness
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.source.outputs.version }}
         run: |
-          if gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
+          set -euo pipefail
+          dmg_sha="$(sha256sum Codex.dmg | awk '{print $1}')"
+          echo "dmg_sha=$dmg_sha" >> "$GITHUB_OUTPUT"
+          if ! gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "fresh=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "exists=true" >> "$GITHUB_OUTPUT"
+          rm -rf existing-release
+          mkdir -p existing-release
+          if gh release download "v$VERSION" --repo "$GITHUB_REPOSITORY" --pattern manifest.json --dir existing-release >/dev/null 2>&1; then
+            existing_sha="$(jq -r '.sourceDmgSha256 // empty' existing-release/manifest.json)"
+          else
+            existing_sha=""
+          fi
+          if [ "$existing_sha" = "$dmg_sha" ]; then
+            echo "fresh=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "fresh=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Download DMG
-        if: steps.existing.outputs.exists != 'true'
-        run: |
-          curl -fL "${{ steps.source.outputs.dmg_url }}" -o Codex.dmg
-
       - name: Build packages
-        if: steps.existing.outputs.exists != 'true'
+        if: steps.freshness.outputs.fresh != 'true'
         run: |
           scripts/build-from-dmg --dmg Codex.dmg --version "${{ steps.source.outputs.version }}"
 
       - name: Validate release artifacts
-        if: steps.existing.outputs.exists != 'true'
+        if: steps.freshness.outputs.fresh != 'true'
         run: |
           scripts/validate-release-artifacts dist "${{ steps.source.outputs.version }}"
 
       - name: Privacy audit
-        if: steps.existing.outputs.exists != 'true'
+        if: steps.freshness.outputs.fresh != 'true'
         run: scripts/privacy-audit
 
       - name: Create release
-        if: steps.existing.outputs.exists != 'true'
+        if: steps.freshness.outputs.fresh != 'true' && steps.freshness.outputs.exists != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.source.outputs.version }}
         run: |
-          gh release create "v$VERSION" dist/* Codex.dmg \
+          gh release create "v$VERSION" dist/* \
             --repo "$GITHUB_REPOSITORY" \
             --title "Codex UI Linux Port $VERSION" \
             --notes "Private automated Linux package build for Codex UI $VERSION."
+
+      - name: Refresh release
+        if: steps.freshness.outputs.fresh != 'true' && steps.freshness.outputs.exists == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.source.outputs.version }}
+        run: |
+          gh release upload "v$VERSION" dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --clobber
+          gh release edit "v$VERSION" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Codex UI Linux Port $VERSION" \
+            --notes "Private automated Linux package build for Codex UI $VERSION. Source DMG SHA256: ${{ steps.freshness.outputs.dmg_sha }}"
