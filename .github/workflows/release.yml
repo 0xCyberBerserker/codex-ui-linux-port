@@ -101,7 +101,19 @@ jobs:
           else
             existing_sha=""
           fi
-          if [ "$existing_sha" = "$source_sha" ]; then
+
+          asset_set_complete=false
+          if gh release download "v$VERSION" --repo "$GITHUB_REPOSITORY" --pattern checksums.txt --dir existing-release >/dev/null 2>&1; then
+            gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' > existing-release/assets.txt
+            asset_set_complete=true
+            while read -r _sha asset_name; do
+              if ! grep -Fxq "$asset_name" existing-release/assets.txt; then
+                asset_set_complete=false
+              fi
+            done < existing-release/checksums.txt
+          fi
+
+          if [ "$existing_sha" = "$source_sha" ] && [ "$asset_set_complete" = "true" ]; then
             echo "fresh=true" >> "$GITHUB_OUTPUT"
           else
             echo "fresh=false" >> "$GITHUB_OUTPUT"
@@ -140,6 +152,20 @@ jobs:
           VERSION: ${{ steps.source.outputs.version }}
         run: |
           mapfile -t assets < <(find dist -maxdepth 1 -type f | sort)
+          mapfile -t expected_names < <(printf '%s\n' "${assets[@]}" | xargs -r -n1 basename | sort)
+          mapfile -t existing_names < <(gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' | sort)
+          for existing_name in "${existing_names[@]}"; do
+            keep=false
+            for expected_name in "${expected_names[@]}"; do
+              if [ "$existing_name" = "$expected_name" ]; then
+                keep=true
+                break
+              fi
+            done
+            if [ "$keep" = "false" ]; then
+              gh release delete-asset "v$VERSION" "$existing_name" --repo "$GITHUB_REPOSITORY" --yes
+            fi
+          done
           gh release upload "v$VERSION" "${assets[@]}" \
             --repo "$GITHUB_REPOSITORY" \
             --clobber
