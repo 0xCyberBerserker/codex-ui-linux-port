@@ -44,3 +44,7 @@ Release assets must include:
 - `checksums.txt`
 
 If redistribution constraints change, remove public release assets and keep only the automation public.
+
+## License Boundary
+
+Repository-authored automation, Linux patches, packaging metadata, website material, and documentation use the PolyForm Noncommercial License 1.0.0. This license does not cover upstream software, application assets, release metadata, trademarks, or third-party dependencies. Generated packages retain `Custom` package-license metadata because they are aggregate artifacts.

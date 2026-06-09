@@ -38,8 +38,8 @@ This repository rebuilds upstream Codex UI release artifacts into Linux packages
 ## What It Builds
 
 - Arch/CachyOS package: `.pkg.tar.zst`
-- Debian/Ubuntu package: `.deb`
-- Fedora/RHEL-like package: `.rpm`
+- Debian/Ubuntu package: `.deb` (experimental)
+- Fedora/RHEL-like package: `.rpm` (experimental)
 - Source archive release asset: `Codex-$VERSION.dmg` or `Codex-$VERSION.zip`
 - Release manifest and checksums
 - Future AUR metadata under `packaging/aur`
@@ -79,13 +79,13 @@ Run a smoke test:
 codexui-update --smoke
 ```
 
-Public release downloads do not require authentication. Private forks can use `gh auth login`, `GITHUB_TOKEN`, or `GH_TOKEN`.
+Public release downloads do not require authentication. Private forks can use `GITHUB_TOKEN` or `GH_TOKEN`.
 
 ## Release Pipeline
 
 GitHub Actions is the authoritative builder.
 
-Every scheduled or manual run downloads the current upstream source archive, computes its SHA256, compares it with the existing release manifest, and rebuilds only when needed. If the same version tag already exists but the source archive changed, the release assets are refreshed with `--clobber`.
+Every scheduled or manual run downloads the current upstream source archive, computes its SHA256, compares it with the existing release manifest, and verifies every existing asset against `checksums.txt`. It rebuilds only when needed. If the same version tag exists but the source or any published artifact changed, release assets are refreshed with `--clobber`.
 
 Required release assets:
 
@@ -127,7 +127,14 @@ Publication and redistribution notes live in [docs/publication.md](docs/publicat
 - [Security And Privacy](docs/security.md)
 - [AUR Preparation](docs/aur.md)
 - [Publication Checklist](docs/publication.md)
+- [Security Policy](SECURITY.md)
 - [Disclaimer](DISCLAIMER.md)
+
+## License
+
+Original automation scripts, Linux patches, packaging metadata, website material, and documentation in this repository are licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE).
+
+This is a source-available, noncommercial license. It does not grant rights over Codex, Codex UI, OpenAI software, upstream binaries, application assets, release metadata, trademarks, or third-party dependencies. See [NOTICE.md](NOTICE.md) for the exact scope.
 
 ## Disclaimer
 

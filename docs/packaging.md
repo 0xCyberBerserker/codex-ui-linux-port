@@ -18,7 +18,9 @@ Runtime dependencies:
 - jq
 - desktop-file-utils
 
-The Arch/CachyOS package is the primary target. Debian and Fedora packages are generated for future portability, but the host must provide a compatible Electron 42 runtime.
+The Arch/CachyOS package is the primary supported target. Debian and Fedora packages are experimental: they are generated for portability testing, but the host must provide a compatible Electron 42 runtime.
+
+Generated packages use `Custom` license metadata because they aggregate repository-authored material and upstream components governed by separate terms. Project license files are installed under `/usr/share/licenses/codex-ui-linux-port`.
 
 ## Release Build Authority
 
@@ -33,7 +35,9 @@ A release run must generate and validate:
 - `manifest.json`
 - `checksums.txt`
 
-The workflow downloads the upstream source archive on every run. If a release for the same version already exists, the workflow compares the downloaded archive SHA256 with `manifest.json`. Matching SHA256 means the release is current and the build is skipped. A changed SHA256 rebuilds the packages and refreshes release assets with `--clobber`.
+The workflow downloads the upstream source archive on every run. If a release for the same version already exists, the workflow compares the downloaded archive SHA256 with `manifest.json`, downloads every asset listed in `checksums.txt`, and verifies every hash. Matching source and artifact hashes mean the release is current and the build is skipped. Any mismatch rebuilds the packages and refreshes release assets with `--clobber`.
+
+`manifest.json` records the upstream source URL, source archive filename, SHA256, package version, and UTC generation timestamp.
 
 The workflow fails before release creation or refresh if any required package is missing, empty, has an unexpected name, has a stale source archive hash, or fails checksum validation.
 

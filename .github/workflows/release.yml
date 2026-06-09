@@ -17,12 +17,23 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: codex-ui-release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.12.0"
+          cache: npm
+          cache-dependency-path: tools/package-lock.json
 
       - name: Install build tools
         run: |
@@ -76,17 +87,21 @@ jobs:
           PY
 
       - name: Download source archive
+        env:
+          SOURCE_EXT: ${{ steps.source.outputs.source_ext }}
+          SOURCE_URL: ${{ steps.source.outputs.source_url }}
         run: |
-          curl -fL "${{ steps.source.outputs.source_url }}" -o "Codex-source.${{ steps.source.outputs.source_ext }}"
+          curl -fL "$SOURCE_URL" -o "Codex-source.$SOURCE_EXT"
 
       - name: Check release freshness
         id: freshness
         env:
           GH_TOKEN: ${{ github.token }}
+          SOURCE_EXT: ${{ steps.source.outputs.source_ext }}
           VERSION: ${{ steps.source.outputs.version }}
         run: |
           set -euo pipefail
-          source_sha="$(sha256sum "Codex-source.${{ steps.source.outputs.source_ext }}" | awk '{print $1}')"
+          source_sha="$(sha256sum "Codex-source.$SOURCE_EXT" | awk '{print $1}')"
           echo "source_sha=$source_sha" >> "$GITHUB_OUTPUT"
           if ! gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "exists=false" >> "$GITHUB_OUTPUT"
@@ -106,11 +121,23 @@ jobs:
           if gh release download "v$VERSION" --repo "$GITHUB_REPOSITORY" --pattern checksums.txt --dir existing-release >/dev/null 2>&1; then
             gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' > existing-release/assets.txt
             asset_set_complete=true
-            while read -r _sha asset_name; do
+            while read -r expected_sha asset_name extra; do
+              if [[ ! "$expected_sha" =~ ^[0-9a-f]{64}$ ]] || [ -z "$asset_name" ] || [ -n "${extra:-}" ] || [ "$(basename "$asset_name")" != "$asset_name" ]; then
+                asset_set_complete=false
+                break
+              fi
               if ! grep -Fxq "$asset_name" existing-release/assets.txt; then
                 asset_set_complete=false
+                break
+              fi
+              if ! gh release download "v$VERSION" --repo "$GITHUB_REPOSITORY" --pattern "$asset_name" --dir existing-release --clobber >/dev/null 2>&1; then
+                asset_set_complete=false
+                break
               fi
             done < existing-release/checksums.txt
+            if [ "$asset_set_complete" = "true" ] && ! (cd existing-release && sha256sum -c checksums.txt >/dev/null); then
+              asset_set_complete=false
+            fi
           fi
 
           if [ "$existing_sha" = "$source_sha" ] && [ "$asset_set_complete" = "true" ]; then
@@ -121,13 +148,22 @@ jobs:
 
       - name: Build packages
         if: steps.freshness.outputs.fresh != 'true'
+        env:
+          SOURCE_EXT: ${{ steps.source.outputs.source_ext }}
+          SOURCE_URL: ${{ steps.source.outputs.source_url }}
+          VERSION: ${{ steps.source.outputs.version }}
         run: |
-          scripts/build-from-dmg --source "Codex-source.${{ steps.source.outputs.source_ext }}" --version "${{ steps.source.outputs.version }}"
+          scripts/build-from-dmg \
+            --source "Codex-source.$SOURCE_EXT" \
+            --source-url "$SOURCE_URL" \
+            --version "$VERSION"
 
       - name: Validate release artifacts
         if: steps.freshness.outputs.fresh != 'true'
+        env:
+          VERSION: ${{ steps.source.outputs.version }}
         run: |
-          scripts/validate-release-artifacts dist "${{ steps.source.outputs.version }}"
+          scripts/validate-release-artifacts dist "$VERSION"
 
       - name: Privacy audit
         if: steps.freshness.outputs.fresh != 'true'

@@ -42,6 +42,15 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
+[[ "$REPO" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] || {
+  echo "$PROGRAM: invalid GitHub repository: $REPO" >&2
+  exit 2
+}
+if [[ -n "$REQUESTED_VERSION" && ! "$REQUESTED_VERSION" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  echo "$PROGRAM: invalid version: $REQUESTED_VERSION" >&2
+  exit 2
+fi
+
 need() {
   command -v "$1" >/dev/null 2>&1 || { echo "$PROGRAM: missing required command: $1" >&2; exit 2; }
 }
@@ -52,7 +61,7 @@ need sed
 need grep
 need sha256sum
 need jq
-need gh
+need curl
 
 arch="$(uname -m)"
 if [[ "$arch" != "x86_64" ]]; then
@@ -105,14 +114,39 @@ current_version() {
 api_json="$(mktemp)"
 trap 'rm -f "$api_json"; [[ -n "${tmpdir:-}" ]] && rm -rf "$tmpdir"' EXIT
 
+github_headers=(-H "X-GitHub-Api-Version: 2022-11-28")
+github_token="${GITHUB_TOKEN:-${GH_TOKEN:-}}"
+if [[ -n "$github_token" ]]; then
+  github_headers+=(-H "Authorization: Bearer $github_token")
+fi
+
+github_api() {
+  local endpoint="$1"
+  curl -fsSL "${github_headers[@]}" -H "Accept: application/vnd.github+json" \
+    "https://api.github.com/$endpoint"
+}
+
+download_asset() {
+  local asset_id="$1"
+  local destination="$2"
+  curl -fL "${github_headers[@]}" -H "Accept: application/octet-stream" \
+    "https://api.github.com/repos/$REPO/releases/assets/$asset_id" \
+    -o "$destination"
+}
+
 if [[ -n "$REQUESTED_VERSION" ]]; then
   tag="$REQUESTED_VERSION"
   [[ "$tag" == v* ]] || tag="v$tag"
-  gh api "repos/$REPO/releases/tags/$tag" > "$api_json"
+  github_api "repos/$REPO/releases/tags/$tag" > "$api_json"
 else
-  gh api "repos/$REPO/releases/latest" > "$api_json"
+  github_api "repos/$REPO/releases/latest" > "$api_json"
   tag="$(jq -r '.tag_name' "$api_json")"
 fi
+
+[[ "$(jq -r '.tag_name // empty' "$api_json")" == "$tag" ]] || {
+  echo "$PROGRAM: release not found: $tag" >&2
+  exit 1
+}
 
 latest_version="${tag#v}"
 installed_version="$(current_version || true)"
@@ -130,13 +164,43 @@ if [[ "$FORCE" -ne 1 && -n "$installed_version" && "$installed_version" == "$lat
 fi
 
 tmpdir="$(mktemp -d)"
-asset_pattern="*${latest_version}*.${pkg_kind}"
+case "$pkg_kind" in
+  pkg.tar.zst) asset_suffix=".pkg.tar.zst" ;;
+  deb) asset_suffix="_amd64.deb" ;;
+  rpm) asset_suffix=".x86_64.rpm" ;;
+esac
 
-echo "$PROGRAM: downloading $asset_pattern from $REPO $tag"
-gh release download "$tag" --repo "$REPO" --pattern "$asset_pattern" --pattern "checksums.txt" --dir "$tmpdir" --clobber
+mapfile -t package_assets < <(jq -r --arg version "$latest_version" --arg suffix "$asset_suffix" \
+  '.assets[] | select(.name | contains($version) and endswith($suffix)) | [.id, .name] | @tsv' "$api_json")
+[[ "${#package_assets[@]}" -eq 1 ]] || {
+  echo "$PROGRAM: expected one package asset for $pkg_kind, found ${#package_assets[@]}" >&2
+  exit 1
+}
+
+IFS=$'\t' read -r package_asset_id package_asset_name <<< "${package_assets[0]}"
+mapfile -t checksums_assets < <(jq -r \
+  '.assets[] | select(.name == "checksums.txt") | [.id, .name] | @tsv' "$api_json")
+[[ "${#checksums_assets[@]}" -eq 1 ]] || { echo "$PROGRAM: expected one checksums.txt release asset" >&2; exit 1; }
+IFS=$'\t' read -r checksums_asset_id checksums_asset_name <<< "${checksums_assets[0]}"
+
+echo "$PROGRAM: downloading $package_asset_name from $REPO $tag"
+download_asset "$package_asset_id" "$tmpdir/$package_asset_name"
+download_asset "$checksums_asset_id" "$tmpdir/$checksums_asset_name"
 
 package="$(find "$tmpdir" -maxdepth 1 -type f -name "*.${pkg_kind}" | head -n 1)"
 [[ -n "$package" ]] || { echo "$PROGRAM: package asset not found for $pkg_kind" >&2; exit 1; }
+
+package_name="$(basename "$package")"
+package_covered=0
+while read -r expected_sha asset_name extra; do
+  [[ "$expected_sha" =~ ^[0-9a-f]{64}$ ]] || { echo "$PROGRAM: invalid checksum entry" >&2; exit 1; }
+  [[ -n "$asset_name" && -z "${extra:-}" && "$(basename "$asset_name")" == "$asset_name" ]] || {
+    echo "$PROGRAM: unsafe checksum asset name" >&2
+    exit 1
+  }
+  [[ "$asset_name" == "$package_name" ]] && package_covered=1
+done < "$tmpdir/checksums.txt"
+[[ "$package_covered" -eq 1 ]] || { echo "$PROGRAM: package is not covered by checksums.txt" >&2; exit 1; }
 
 (cd "$tmpdir" && sha256sum -c checksums.txt --ignore-missing)
 

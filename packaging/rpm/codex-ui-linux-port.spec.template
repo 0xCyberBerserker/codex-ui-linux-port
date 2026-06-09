@@ -27,3 +27,4 @@ tar -xzf %{_sourcedir}/codex-ui-linux-port-%{version}-payload.tar.gz -C %{buildr
 /usr/bin/codexui-update
 /usr/share/applications/codex-ui-linux.desktop
 /usr/share/icons/hicolor/scalable/apps/codex-ui-linux.svg
+/usr/share/licenses/codex-ui-linux-port

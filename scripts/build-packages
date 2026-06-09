@@ -14,7 +14,7 @@ mkdir -p "$DIST"
 
 stage_common() {
   local target="$1"
-  mkdir -p "$target/opt" "$target/usr/bin" "$target/usr/share/applications" "$target/usr/share/icons/hicolor/scalable/apps"
+  mkdir -p "$target/opt" "$target/usr/bin" "$target/usr/share/applications" "$target/usr/share/icons/hicolor/scalable/apps" "$target/usr/share/licenses/codex-ui-linux-port"
   cp -a "$PKGROOT/opt/codex-ui-linux-port" "$target/opt/"
   install -m 755 "$ROOT/scripts/codexui-update" "$target/opt/codex-ui-linux-port/bin/codexui-update"
   ln -s /opt/codex-ui-linux-port/bin/codex-ui-linux "$target/usr/bin/codex-ui-linux"
@@ -23,6 +23,9 @@ stage_common() {
   if [[ -f "$PKGROOT/opt/codex-ui-linux-port/share/icons/hicolor/scalable/apps/codex-ui-linux.svg" ]]; then
     install -m 644 "$PKGROOT/opt/codex-ui-linux-port/share/icons/hicolor/scalable/apps/codex-ui-linux.svg" "$target/usr/share/icons/hicolor/scalable/apps/codex-ui-linux.svg"
   fi
+  install -m 644 "$ROOT/LICENSE" "$target/usr/share/licenses/codex-ui-linux-port/LICENSE"
+  install -m 644 "$ROOT/NOTICE.md" "$target/usr/share/licenses/codex-ui-linux-port/NOTICE.md"
+  install -m 644 "$ROOT/DISCLAIMER.md" "$target/usr/share/licenses/codex-ui-linux-port/DISCLAIMER.md"
   cat > "$target/opt/codex-ui-linux-port/manifest.json" <<JSON
 {"version":"$VERSION","sourceArchiveSha256":"$SOURCE_SHA","package":"$NAME"}
 JSON
@@ -104,6 +107,7 @@ tar -xzf %{_sourcedir}/${NAME}-${VERSION}-payload.tar.gz -C %{buildroot}
 /usr/bin/codexui-update
 /usr/share/applications/codex-ui-linux.desktop
 /usr/share/icons/hicolor/scalable/apps/codex-ui-linux.svg
+/usr/share/licenses/codex-ui-linux-port
 EOF
 
   rpmbuild --define "_topdir $DIST/rpmbuild" \

@@ -46,11 +46,25 @@ fi
 
 export BUILD_FLAVOR=prod
 export CODEX_CLI_PATH="\$CLI_WRAPPER"
-export LANGUAGE="\${LANGUAGE:-es_ES:es}"
-export LANG="\${LANG:-es_ES.UTF-8}"
-export LC_MESSAGES="\${LC_MESSAGES:-es_ES.UTF-8}"
 
-exec "\$ELECTRON_BIN" --lang=es-ES --ozone-platform=x11 --disable-vulkan --force-device-scale-factor=1 "\$APP_ROOT/app-src" "\$@"
+locale_value="\${CODEXUI_LANG:-\${LC_ALL:-\${LC_MESSAGES:-\${LANG:-}}}}"
+locale_value="\${locale_value%%.*}"
+locale_value="\${locale_value%%@*}"
+locale_value="\${locale_value//_/-}"
+
+electron_args=()
+if [[ -n "\$locale_value" && "\$locale_value" != "C" && "\$locale_value" != "POSIX" ]]; then
+  electron_args+=(--lang="\$locale_value")
+fi
+if [[ -n "\${CODEXUI_OZONE_PLATFORM:-}" ]]; then
+  electron_args+=(--ozone-platform="\$CODEXUI_OZONE_PLATFORM")
+fi
+if [[ -n "\${CODEXUI_ELECTRON_FLAGS:-}" ]]; then
+  read -r -a configured_flags <<< "\$CODEXUI_ELECTRON_FLAGS"
+  electron_args+=("\${configured_flags[@]}")
+fi
+
+exec "\$ELECTRON_BIN" "\${electron_args[@]}" "\$APP_ROOT/app-src" "\$@"
 EOF
 
 chmod 755 "$INSTALL_ROOT/bin/codex-cli-wrapper" "$INSTALL_ROOT/bin/codex-ui-linux"
