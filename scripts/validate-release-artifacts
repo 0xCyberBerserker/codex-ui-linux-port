@@ -12,8 +12,19 @@ fail() {
 
 [[ -d "$DIST" ]] || fail "directory not found: $DIST"
 
+archive_file=""
+for candidate in "$DIST/Codex-${VERSION}.dmg" "$DIST/Codex-${VERSION}.zip"; do
+  if [[ -s "$candidate" ]]; then
+    if [[ -n "$archive_file" ]]; then
+      fail "multiple source archives found for $VERSION"
+    fi
+    archive_file="$(basename "$candidate")"
+  fi
+done
+[[ -n "$archive_file" ]] || fail "missing source archive: Codex-${VERSION}.dmg or Codex-${VERSION}.zip"
+
 expected=(
-  "Codex-${VERSION}.dmg"
+  "$archive_file"
   "${NAME}-${VERSION}-1-x86_64.pkg.tar.zst"
   "${NAME}-${VERSION}-1.x86_64.rpm"
   "${NAME}_${VERSION}_amd64.deb"
@@ -25,31 +36,31 @@ for artifact in "${expected[@]}"; do
   [[ -s "$DIST/$artifact" ]] || fail "missing or empty artifact: $artifact"
 done
 
-for unexpected in "$DIST"/*.dmg "$DIST"/*.pkg.tar.zst "$DIST"/*.rpm "$DIST"/*.deb; do
+for unexpected in "$DIST"/*.dmg "$DIST"/*.zip "$DIST"/*.pkg.tar.zst "$DIST"/*.rpm "$DIST"/*.deb; do
   [[ -e "$unexpected" ]] || continue
   base="$(basename "$unexpected")"
   case "$base" in
-    "Codex-${VERSION}.dmg"|"${NAME}-${VERSION}-1-x86_64.pkg.tar.zst"|"${NAME}-${VERSION}-1.x86_64.rpm"|"${NAME}_${VERSION}_amd64.deb") ;;
+    "$archive_file"|"${NAME}-${VERSION}-1-x86_64.pkg.tar.zst"|"${NAME}-${VERSION}-1.x86_64.rpm"|"${NAME}_${VERSION}_amd64.deb") ;;
     *) fail "unexpected package artifact: $base" ;;
   esac
 done
 
 if command -v jq >/dev/null 2>&1; then
   manifest_version="$(jq -r '.version // empty' "$DIST/manifest.json")"
-  manifest_dmg_file="$(jq -r '.sourceDmgFile // empty' "$DIST/manifest.json")"
-  manifest_dmg_sha="$(jq -r '.sourceDmgSha256 // empty' "$DIST/manifest.json")"
+  manifest_archive_file="$(jq -r '.sourceArchiveFile // .sourceDmgFile // empty' "$DIST/manifest.json")"
+  manifest_archive_sha="$(jq -r '.sourceArchiveSha256 // .sourceDmgSha256 // empty' "$DIST/manifest.json")"
 else
-  manifest_values="$(node -e 'const fs=require("fs"); const p=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); process.stdout.write([p.version || "", p.sourceDmgFile || "", p.sourceDmgSha256 || ""].join("\n"))' "$DIST/manifest.json")"
+  manifest_values="$(node -e 'const fs=require("fs"); const p=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); process.stdout.write([p.version || "", p.sourceArchiveFile || p.sourceDmgFile || "", p.sourceArchiveSha256 || p.sourceDmgSha256 || ""].join("\n"))' "$DIST/manifest.json")"
   manifest_version="$(printf '%s\n' "$manifest_values" | sed -n '1p')"
-  manifest_dmg_file="$(printf '%s\n' "$manifest_values" | sed -n '2p')"
-  manifest_dmg_sha="$(printf '%s\n' "$manifest_values" | sed -n '3p')"
+  manifest_archive_file="$(printf '%s\n' "$manifest_values" | sed -n '2p')"
+  manifest_archive_sha="$(printf '%s\n' "$manifest_values" | sed -n '3p')"
 fi
 
 [[ "$manifest_version" == "$VERSION" ]] || fail "manifest version mismatch: got '$manifest_version', expected '$VERSION'"
-[[ "$manifest_dmg_file" == "Codex-${VERSION}.dmg" ]] || fail "manifest DMG file mismatch: got '$manifest_dmg_file'"
+[[ "$manifest_archive_file" == "$archive_file" ]] || fail "manifest source archive file mismatch: got '$manifest_archive_file'"
 
-actual_dmg_sha="$(sha256sum "$DIST/Codex-${VERSION}.dmg" | awk '{print $1}')"
-[[ "$manifest_dmg_sha" == "$actual_dmg_sha" ]] || fail "manifest DMG SHA mismatch"
+actual_archive_sha="$(sha256sum "$DIST/$archive_file" | awk '{print $1}')"
+[[ "$manifest_archive_sha" == "$actual_archive_sha" ]] || fail "manifest source archive SHA mismatch"
 
 (cd "$DIST" && sha256sum -c checksums.txt)
 

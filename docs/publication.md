@@ -13,7 +13,7 @@ This repository is currently private. It is designed to become public later, but
 ## Required Before Public Release
 
 1. Review upstream redistribution and trademark constraints.
-2. Confirm whether public GitHub release assets may include the upstream DMG-derived Linux packages.
+2. Confirm whether public GitHub release assets may include upstream-archive-derived Linux packages.
 3. Run `scripts/privacy-audit` from a clean checkout.
 4. Verify no local usernames, work names, host-specific paths, Codex chats, Codex profiles, runtime databases, tokens, or private keys exist in tracked files.
 5. Verify `README.md`, `docs/*`, package metadata, and workflow notes describe the project as unofficial automation.
@@ -33,15 +33,15 @@ Avoid maintainer-specific language such as personal workstation details, employe
 
 ## Release Asset Policy
 
-GitHub Actions is the only authoritative release builder. It always downloads the current upstream DMG, compares its SHA256 against the release manifest, rebuilds packages when needed, validates all artifacts, and runs the privacy audit.
+GitHub Actions is the only authoritative release builder. It always downloads the current upstream source archive, compares its SHA256 against the release manifest, rebuilds packages when needed, validates all artifacts, and runs the privacy audit.
 
 Release assets must include:
 
-- `Codex-$VERSION.dmg`
+- `Codex-$VERSION.dmg` or `Codex-$VERSION.zip`
 - `codex-ui-linux-port-$VERSION-1-x86_64.pkg.tar.zst`
 - `codex-ui-linux-port_$VERSION_amd64.deb`
 - `codex-ui-linux-port-$VERSION-1.x86_64.rpm`
 - `manifest.json`
 - `checksums.txt`
 
-If public redistribution is not acceptable, do not publish release assets. Keep only the automation public and require users to provide their own DMG.
+If public redistribution is not acceptable, do not publish release assets. Keep only the automation public and require users to provide their own source archive.

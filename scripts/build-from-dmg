@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DMG=""
+SOURCE=""
 VERSION=""
 WORKDIR="$ROOT/build/work"
 DIST="$ROOT/dist"
@@ -10,13 +10,15 @@ DIST="$ROOT/dist"
 usage() {
   cat <<'EOF'
 Usage:
+  scripts/build-from-dmg --source /path/to/Codex.dmg|Codex.zip [--version VERSION]
   scripts/build-from-dmg --dmg /path/to/Codex.dmg [--version VERSION]
 EOF
 }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --dmg) shift; DMG="${1:-}" ;;
+    --source) shift; SOURCE="${1:-}" ;;
+    --dmg) shift; SOURCE="${1:-}" ;;
     --version) shift; VERSION="${1:-}" ;;
     --help|-h) usage; exit 0 ;;
     *) echo "build-from-dmg: unknown option: $1" >&2; usage >&2; exit 2 ;;
@@ -24,7 +26,7 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-[[ -f "$DMG" ]] || { echo "build-from-dmg: DMG not found: $DMG" >&2; exit 2; }
+[[ -f "$SOURCE" ]] || { echo "build-from-dmg: source archive not found: $SOURCE" >&2; exit 2; }
 
 need() {
   command -v "$1" >/dev/null 2>&1 || { echo "build-from-dmg: missing command: $1" >&2; exit 2; }
@@ -40,10 +42,13 @@ need sha256sum
 rm -rf "$WORKDIR"
 mkdir -p "$WORKDIR" "$DIST"
 
-dmg_sha="$(sha256sum "$DMG" | awk '{print $1}')"
+source_sha="$(sha256sum "$SOURCE" | awk '{print $1}')"
+source_ext="${SOURCE%%\?*}"
+source_ext="${source_ext##*.}"
+case "$source_ext" in dmg|zip) ;; *) echo "build-from-dmg: unsupported source archive extension: $source_ext" >&2; exit 2 ;; esac
 extract="$WORKDIR/dmg"
 mkdir -p "$extract"
-7z x -y -o"$extract" "$DMG" >/dev/null
+7z x -y -o"$extract" "$SOURCE" >/dev/null
 
 asar_path="$(find "$extract" -path '*/Codex.app/Contents/Resources/app.asar' -type f | head -n 1)"
 unpacked_path="$(find "$extract" -path '*/Codex.app/Contents/Resources/app.asar.unpacked' -type d | head -n 1)"
@@ -81,20 +86,20 @@ cp -a "$native_build/node_modules/better-sqlite3" "$install_root/app-src/node_mo
 cp -a "$native_build/node_modules/node-pty" "$install_root/app-src/node_modules/"
 
 "$ROOT/scripts/apply-linux-patches" "$install_root" "$VERSION"
-"$ROOT/scripts/build-packages" "$WORKDIR/pkgroot" "$VERSION" "$dmg_sha"
+"$ROOT/scripts/build-packages" "$WORKDIR/pkgroot" "$VERSION" "$source_sha"
 
-source_dmg_file="Codex-${VERSION}.dmg"
-cp "$DMG" "$DIST/$source_dmg_file"
+source_archive_file="Codex-${VERSION}.${source_ext}"
+cp "$SOURCE" "$DIST/$source_archive_file"
 
 cat > "$DIST/manifest.json" <<JSON
 {
   "version": "$VERSION",
-  "sourceDmgFile": "$source_dmg_file",
-  "sourceDmgSha256": "$dmg_sha",
+  "sourceArchiveFile": "$source_archive_file",
+  "sourceArchiveSha256": "$source_sha",
   "generatedAtUtc": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
   "packageName": "codex-ui-linux-port"
 }
 JSON
 
-(cd "$DIST" && find . -maxdepth 1 -type f \( -name '*.dmg' -o -name '*.deb' -o -name '*.rpm' -o -name '*.pkg.tar.zst' -o -name 'manifest.json' \) -printf '%P\n' | sort | xargs -r sha256sum > checksums.txt)
+(cd "$DIST" && find . -maxdepth 1 -type f \( -name '*.dmg' -o -name '*.zip' -o -name '*.deb' -o -name '*.rpm' -o -name '*.pkg.tar.zst' -o -name 'manifest.json' \) -printf '%P\n' | sort | xargs -r sha256sum > checksums.txt)
 echo "build-from-dmg: artifacts written to $DIST"

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Unofficial Linux packaging automation for Codex UI.">
+    <title>Codex UI Linux Port</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="topbar" aria-label="Primary">
+      <a class="brand" href="#top" aria-label="Codex UI Linux Port home">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>Codex UI Linux Port</span>
+      </a>
+      <nav>
+        <a href="#pipeline">Pipeline</a>
+        <a href="#packages">Packages</a>
+        <a href="#boundary">Boundary</a>
+        <a href="https://github.com/0xCyberBerserker/codex-ui-linux-port">GitHub</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-grid" aria-hidden="true">
+          <div class="scanline"></div>
+          <div class="artifact artifact-src">SRC</div>
+          <div class="artifact artifact-arch">PKG</div>
+          <div class="artifact artifact-deb">DEB</div>
+          <div class="artifact artifact-rpm">RPM</div>
+        </div>
+        <div class="hero-copy">
+          <p class="eyebrow">Unofficial release automation</p>
+          <h1 id="hero-title">Codex UI, rebuilt for Linux.</h1>
+          <p class="lede">A private-first packaging pipeline that tracks upstream Codex UI releases, validates artifacts, and prepares a clean path to public release.</p>
+          <div class="actions">
+            <a class="button primary" href="https://github.com/0xCyberBerserker/codex-ui-linux-port">View Repository</a>
+            <a class="button secondary" href="#pipeline">Read The Pipeline</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="about" aria-labelledby="about-title">
+        <div>
+          <p class="section-kicker">About</p>
+          <h2 id="about-title">Built for repeatable Linux workstation updates.</h2>
+        </div>
+        <p>Codex UI changes fast. This project keeps Linux packaging deterministic: fetch current upstream source archive, rebuild native modules, apply Linux patches, emit packages, verify checksums, and keep local runtime data out of git.</p>
+      </section>
+
+      <section id="pipeline" class="pipeline" aria-labelledby="pipeline-title">
+        <p class="section-kicker">Pipeline</p>
+        <h2 id="pipeline-title">Actions is the release authority.</h2>
+        <div class="rail" role="list">
+          <div role="listitem">
+            <span>01</span>
+            <strong>Resolve</strong>
+            <p>Read upstream appcast and select current source archive and version.</p>
+          </div>
+          <div role="listitem">
+            <span>02</span>
+            <strong>Compare</strong>
+            <p>Hash source archive and compare against existing release manifest.</p>
+          </div>
+          <div role="listitem">
+            <span>03</span>
+            <strong>Build</strong>
+            <p>Generate Arch/CachyOS, Debian, and RPM artifacts.</p>
+          </div>
+          <div role="listitem">
+            <span>04</span>
+            <strong>Verify</strong>
+            <p>Validate expected assets, manifest, checksums, and privacy boundary.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="packages" class="packages" aria-labelledby="packages-title">
+        <div>
+          <p class="section-kicker">Packages</p>
+          <h2 id="packages-title">One release. Three Linux package families.</h2>
+        </div>
+        <ul class="package-list">
+          <li><span>Arch / CachyOS</span><code>.pkg.tar.zst</code></li>
+          <li><span>Debian / Ubuntu</span><code>.deb</code></li>
+          <li><span>Fedora / RHEL-like</span><code>.rpm</code></li>
+          <li><span>Source artifact</span><code>Codex-$VERSION.dmg|zip</code></li>
+        </ul>
+      </section>
+
+      <section id="boundary" class="boundary" aria-labelledby="boundary-title">
+        <p class="section-kicker">Boundary</p>
+        <h2 id="boundary-title">Private now. Public later, after review.</h2>
+        <p>The repository stores automation, patches, package metadata, and documentation. It must not store Codex chats, profiles, sessions, runtime databases, tokens, private keys, local paths, extracted app bundles, or employer context.</p>
+        <a class="button secondary" href="publication.html">Publication Checklist</a>
+      </section>
+    </main>
+
+    <footer>
+      <span>Unofficial project. Not affiliated with, endorsed by, or supported by OpenAI.</span>
+      <a href="about.html">About</a>
+    </footer>
+  </body>
+</html>

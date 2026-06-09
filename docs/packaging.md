@@ -26,15 +26,15 @@ GitHub Actions is the authoritative builder for release artifacts. While the rep
 
 A release run must generate and validate:
 
-- `Codex-$VERSION.dmg`
+- `Codex-$VERSION.dmg` or `Codex-$VERSION.zip`
 - `codex-ui-linux-port-$VERSION-1-x86_64.pkg.tar.zst`
 - `codex-ui-linux-port_$VERSION_amd64.deb`
 - `codex-ui-linux-port-$VERSION-1.x86_64.rpm`
 - `manifest.json`
 - `checksums.txt`
 
-The workflow downloads the upstream DMG on every run. If a release for the same version already exists, the workflow compares the downloaded DMG SHA256 with `manifest.json`. Matching SHA256 means the release is current and the build is skipped. A changed SHA256 rebuilds the packages and refreshes release assets with `--clobber`.
+The workflow downloads the upstream source archive on every run. If a release for the same version already exists, the workflow compares the downloaded archive SHA256 with `manifest.json`. Matching SHA256 means the release is current and the build is skipped. A changed SHA256 rebuilds the packages and refreshes release assets with `--clobber`.
 
-The workflow fails before release creation or refresh if any required package is missing, empty, has an unexpected name, has a stale DMG hash, or fails checksum validation.
+The workflow fails before release creation or refresh if any required package is missing, empty, has an unexpected name, has a stale source archive hash, or fails checksum validation.
 
 Local package builds remain supported for bootstrap, debugging, and smoke testing. They are not the source of truth for future releases.

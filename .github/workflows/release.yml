@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       dmg_url:
-        description: "Optional DMG URL override"
+        description: "Optional source archive URL override"
         required: false
         type: string
       version:
@@ -27,9 +27,9 @@ jobs:
       - name: Install build tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y p7zip-full nodejs npm jq curl dpkg-dev rpm patch zstd
+          sudo apt-get install -y p7zip-full nodejs npm jq curl dpkg-dev rpm patch zstd libarchive-tools
 
-      - name: Resolve source DMG
+      - name: Resolve source archive
         id: source
         env:
           DMG_URL_INPUT: ${{ inputs.dmg_url }}
@@ -37,22 +37,47 @@ jobs:
         run: |
           set -euo pipefail
           if [ -n "${DMG_URL_INPUT:-}" ]; then
-            echo "dmg_url=$DMG_URL_INPUT" >> "$GITHUB_OUTPUT"
-            echo "version=${VERSION_INPUT:-manual}" >> "$GITHUB_OUTPUT"
+            version="${VERSION_INPUT:-}"
+            if [ -z "$version" ]; then
+              version="$(printf '%s\n' "$DMG_URL_INPUT" | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' | head -n 1 || true)"
+            fi
+            test -n "$version"
+            ext="${DMG_URL_INPUT%%\?*}"
+            ext="${ext##*.}"
+            case "$ext" in dmg|zip) ;; *) echo "unsupported source archive extension: $ext" >&2; exit 2 ;; esac
+            echo "source_url=$DMG_URL_INPUT" >> "$GITHUB_OUTPUT"
+            echo "version=$version" >> "$GITHUB_OUTPUT"
+            echo "source_ext=$ext" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           appcast="$(jq -r '.appcastUrl' VERSION.json)"
           curl -fsSL "$appcast" -o appcast.xml
-          url="$(grep -Eo 'https://[^"]+\.dmg[^"]*' appcast.xml | head -n 1)"
-          version="$(grep -Eo 'sparkle:shortVersionString="[^"]+"' appcast.xml | head -n 1 | cut -d '"' -f2)"
-          test -n "$url"
-          test -n "$version"
-          echo "dmg_url=$url" >> "$GITHUB_OUTPUT"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
+          python3 <<'PY' >> "$GITHUB_OUTPUT"
+          import sys
+          import xml.etree.ElementTree as ET
+          ns = {"sparkle": "http://www.andymatuschak.org/xml-namespaces/sparkle"}
+          root = ET.parse("appcast.xml").getroot()
+          for item in root.findall("./channel/item"):
+              version = item.findtext("sparkle:shortVersionString", namespaces=ns) or item.findtext("title") or ""
+              candidates = []
+              for enclosure in item.findall("enclosure"):
+                  url = enclosure.attrib.get("url", "")
+                  clean = url.split("?", 1)[0]
+                  if clean.endswith((".dmg", ".zip")) and ".delta" not in clean:
+                      candidates.append(url)
+              if version and candidates:
+                  source_url = next((url for url in candidates if url.split("?", 1)[0].endswith(".dmg")), candidates[0])
+                  source_ext = source_url.split("?", 1)[0].rsplit(".", 1)[-1]
+                  print(f"source_url={source_url}")
+                  print(f"version={version}")
+                  print(f"source_ext={source_ext}")
+                  sys.exit(0)
+          raise SystemExit("no supported source archive found in appcast")
+          PY
 
-      - name: Download DMG
+      - name: Download source archive
         run: |
-          curl -fL "${{ steps.source.outputs.dmg_url }}" -o Codex.dmg
+          curl -fL "${{ steps.source.outputs.source_url }}" -o "Codex-source.${{ steps.source.outputs.source_ext }}"
 
       - name: Check release freshness
         id: freshness
@@ -61,8 +86,8 @@ jobs:
           VERSION: ${{ steps.source.outputs.version }}
         run: |
           set -euo pipefail
-          dmg_sha="$(sha256sum Codex.dmg | awk '{print $1}')"
-          echo "dmg_sha=$dmg_sha" >> "$GITHUB_OUTPUT"
+          source_sha="$(sha256sum "Codex-source.${{ steps.source.outputs.source_ext }}" | awk '{print $1}')"
+          echo "source_sha=$source_sha" >> "$GITHUB_OUTPUT"
           if ! gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "exists=false" >> "$GITHUB_OUTPUT"
             echo "fresh=false" >> "$GITHUB_OUTPUT"
@@ -72,11 +97,11 @@ jobs:
           rm -rf existing-release
           mkdir -p existing-release
           if gh release download "v$VERSION" --repo "$GITHUB_REPOSITORY" --pattern manifest.json --dir existing-release >/dev/null 2>&1; then
-            existing_sha="$(jq -r '.sourceDmgSha256 // empty' existing-release/manifest.json)"
+            existing_sha="$(jq -r '.sourceArchiveSha256 // .sourceDmgSha256 // empty' existing-release/manifest.json)"
           else
             existing_sha=""
           fi
-          if [ "$existing_sha" = "$dmg_sha" ]; then
+          if [ "$existing_sha" = "$source_sha" ]; then
             echo "fresh=true" >> "$GITHUB_OUTPUT"
           else
             echo "fresh=false" >> "$GITHUB_OUTPUT"
@@ -85,7 +110,7 @@ jobs:
       - name: Build packages
         if: steps.freshness.outputs.fresh != 'true'
         run: |
-          scripts/build-from-dmg --dmg Codex.dmg --version "${{ steps.source.outputs.version }}"
+          scripts/build-from-dmg --source "Codex-source.${{ steps.source.outputs.source_ext }}" --version "${{ steps.source.outputs.version }}"
 
       - name: Validate release artifacts
         if: steps.freshness.outputs.fresh != 'true'
@@ -119,4 +144,4 @@ jobs:
           gh release edit "v$VERSION" \
             --repo "$GITHUB_REPOSITORY" \
             --title "Codex UI Linux Port $VERSION" \
-            --notes "Unofficial automated Linux package build for Codex UI $VERSION. Source DMG SHA256: ${{ steps.freshness.outputs.dmg_sha }}"
+            --notes "Unofficial automated Linux package build for Codex UI $VERSION. Source archive SHA256: ${{ steps.freshness.outputs.source_sha }}"

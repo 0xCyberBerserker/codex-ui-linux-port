@@ -3,7 +3,7 @@ set -euo pipefail
 
 PKGROOT="${1:?pkgroot required}"
 VERSION="${2:?version required}"
-DMG_SHA="${3:?dmg sha required}"
+SOURCE_SHA="${3:?source archive sha required}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DIST="$ROOT/dist"
 NAME="codex-ui-linux-port"
@@ -24,7 +24,7 @@ stage_common() {
     install -m 644 "$PKGROOT/opt/codex-ui-linux-port/share/icons/hicolor/scalable/apps/codex-ui-linux.svg" "$target/usr/share/icons/hicolor/scalable/apps/codex-ui-linux.svg"
   fi
   cat > "$target/opt/codex-ui-linux-port/manifest.json" <<JSON
-{"version":"$VERSION","sourceDmgSha256":"$DMG_SHA","package":"$NAME"}
+{"version":"$VERSION","sourceArchiveSha256":"$SOURCE_SHA","package":"$NAME"}
 JSON
 }
 
