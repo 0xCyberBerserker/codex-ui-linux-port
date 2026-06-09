@@ -21,10 +21,8 @@ function patch(file, transform) {
 
 patch("src/util/macros.cpp", text => {
   if (!text.includes("BETTER_SQLITE3_EXTERNAL_TAG")) {
-    text = text.replace(
-      /(#include[^\n]*\n)/,
-      `$1
-#ifndef BETTER_SQLITE3_EXTERNAL_TAG
+    text =
+`#ifndef BETTER_SQLITE3_EXTERNAL_TAG
 #if V8_MAJOR_VERSION >= 14
 #define BETTER_SQLITE3_EXTERNAL_TAG v8::kExternalPointerTypeTagDefault
 #define BETTER_SQLITE3_EXTERNAL_VALUE(external) (external)->Value(BETTER_SQLITE3_EXTERNAL_TAG)
@@ -34,24 +32,41 @@ patch("src/util/macros.cpp", text => {
 #define BETTER_SQLITE3_EXTERNAL_NEW(isolate, value) v8::External::New((isolate), (value))
 #endif
 #endif
-`
-    );
+
+` + text;
   }
   text = text.replace(
-    /([A-Za-z0-9_:().<>]+\.As<v8::External>\(\))->Value\(\)/g,
-    "BETTER_SQLITE3_EXTERNAL_VALUE($1)"
+    "#define OnlyAddon static_cast<Addon*>(info.Data().As<v8::External>()->Value())",
+    "#define OnlyAddon static_cast<Addon*>(BETTER_SQLITE3_EXTERNAL_VALUE(info.Data().As<v8::External>()))"
+  );
+  text = text.replace(
+    "#define OnlyAddon static_cast<Addon*BETTER_SQLITE3_EXTERNAL_VALUE(>(info.Data().As<v8::External>()))",
+    "#define OnlyAddon static_cast<Addon*>(BETTER_SQLITE3_EXTERNAL_VALUE(info.Data().As<v8::External>()))"
   );
   return text;
 });
 
-patch("src/better_sqlite3.cpp", text =>
-  text.replace(/v8::External::New\(([^,]+),\s*([^)]+)\)/g, "BETTER_SQLITE3_EXTERNAL_NEW($1, $2)")
-);
+patch("src/better_sqlite3.cpp", text => {
+  if (!text.includes("BETTER_SQLITE3_EXTERNAL_TAG")) {
+    text =
+`#ifndef BETTER_SQLITE3_EXTERNAL_TAG
+#if V8_MAJOR_VERSION >= 14
+#define BETTER_SQLITE3_EXTERNAL_TAG v8::kExternalPointerTypeTagDefault
+#define BETTER_SQLITE3_EXTERNAL_VALUE(external) (external)->Value(BETTER_SQLITE3_EXTERNAL_TAG)
+#define BETTER_SQLITE3_EXTERNAL_NEW(isolate, value) v8::External::New((isolate), (value), BETTER_SQLITE3_EXTERNAL_TAG)
+#else
+#define BETTER_SQLITE3_EXTERNAL_VALUE(external) (external)->Value()
+#define BETTER_SQLITE3_EXTERNAL_NEW(isolate, value) v8::External::New((isolate), (value))
+#endif
+#endif
+` + text;
+  }
+  return text.replace(/v8::External::New\(([^,]+),\s*([^)]+)\)/g, "BETTER_SQLITE3_EXTERNAL_NEW($1, $2)");
+});
 
 patch("src/util/helpers.cpp", text =>
-  text.replace(/SetNativeDataProperty\(([^;]*?),\s*0\s*\)/gs, "SetNativeDataProperty($1, nullptr)")
+  text.replace(/\n(\s*)0,\n(\s*)data\n/g, "\n$1nullptr,\n$2data\n")
 );
 NODE
 
 echo "patch-native-modules: applied better-sqlite3 Electron 42 compatibility patch"
-
