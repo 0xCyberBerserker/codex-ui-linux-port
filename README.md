@@ -1,8 +1,35 @@
-# Codex UI Linux Port
+<p align="center">
+  <strong>Codex UI Linux Port</strong>
+</p>
 
-Unofficial Linux packaging automation for Codex UI.
+<p align="center">
+  Unofficial Linux packaging automation for Codex UI.
+</p>
+
+<p align="center">
+  <a href="https://github.com/0xCyberBerserker/codex-ui-linux-port/actions/workflows/release.yml"><img alt="Release workflow" src="https://img.shields.io/github/actions/workflow/status/0xCyberBerserker/codex-ui-linux-port/release.yml?branch=main&label=release%20build"></a>
+  <a href="https://github.com/0xCyberBerserker/codex-ui-linux-port/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/0xCyberBerserker/codex-ui-linux-port?label=latest%20release"></a>
+  <img alt="Targets" src="https://img.shields.io/badge/targets-Arch%20%7C%20Debian%20%7C%20RPM-ffb454">
+  <img alt="Status" src="https://img.shields.io/badge/status-private%20validation-8fd18f">
+  <img alt="Unofficial" src="https://img.shields.io/badge/OpenAI-unofficial-lightgrey">
+</p>
+
+<p align="center">
+  <sub>Made with 🖤 in Barcelona City 🇪🇸</sub>
+</p>
 
 This repository rebuilds the upstream macOS Codex UI release artifact into Linux packages through auditable scripts and GitHub Actions. It is private while the automation and publication boundary are being validated, and it is structured so it can become public later without exposing maintainer-local data.
+
+## Project Signal
+
+| Area | Current signal |
+| --- | --- |
+| Release builder | GitHub Actions is authoritative |
+| Source tracking | Upstream appcast, current source archive, SHA256 manifest |
+| Linux targets | Arch/CachyOS, Debian/Ubuntu, Fedora/RHEL-like |
+| Public status | Private validation now, public-ready structure later |
+| Data boundary | No chats, credentials, runtime state, employer data, or local paths |
+| AUR status | Metadata prepared, not published |
 
 ## What It Builds
 
