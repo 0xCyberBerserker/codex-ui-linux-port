@@ -103,7 +103,7 @@ Comment=Codex UI Linux Port
 Exec=codex-ui-linux %U
 Icon=codex-ui-linux
 Terminal=false
-Categories=Development;Utility;
+Categories=Development;
 StartupNotify=true
 EOF
 
