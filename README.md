@@ -40,7 +40,7 @@ This repository rebuilds upstream Codex UI release artifacts into Linux packages
 - Arch/CachyOS package: `.pkg.tar.zst`
 - Debian/Ubuntu package: `.deb` (experimental)
 - Fedora/RHEL-like package: `.rpm` (experimental)
-- Source archive release asset: `Codex-$VERSION.dmg` or `Codex-$VERSION.zip`
+- Latest official macOS source asset: `Codex-$VERSION.dmg`
 - Release manifest and checksums
 - Future AUR metadata under `packaging/aur`
 
@@ -85,11 +85,11 @@ Public release downloads do not require authentication. Private forks can use `G
 
 GitHub Actions is the authoritative builder.
 
-Every scheduled or manual run downloads the current upstream source archive, computes its SHA256, compares it with the existing release manifest, and verifies every existing asset against `checksums.txt`. It rebuilds only when needed. If the same version tag exists but the source or any published artifact changed, release assets are refreshed with `--clobber`.
+Every scheduled or manual run reads the latest version from the official appcast, downloads the current official `Codex.dmg`, verifies its internal application version, computes its SHA256, compares it with the existing release manifest, and verifies every existing asset against `checksums.txt`. It rebuilds only when needed. If the same version tag exists but the source or any published artifact changed, release assets are refreshed with `--clobber`.
 
 Required release assets:
 
-- `Codex-$VERSION.dmg` or `Codex-$VERSION.zip`
+- `Codex-$VERSION.dmg`
 - `codex-ui-linux-port-$VERSION-1-x86_64.pkg.tar.zst`
 - `codex-ui-linux-port_$VERSION_amd64.deb`
 - `codex-ui-linux-port-$VERSION-1.x86_64.rpm`

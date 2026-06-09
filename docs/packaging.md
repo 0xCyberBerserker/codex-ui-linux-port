@@ -28,14 +28,14 @@ GitHub Actions is the authoritative builder for release artifacts. Generated rel
 
 A release run must generate and validate:
 
-- `Codex-$VERSION.dmg` or `Codex-$VERSION.zip`
+- `Codex-$VERSION.dmg`
 - `codex-ui-linux-port-$VERSION-1-x86_64.pkg.tar.zst`
 - `codex-ui-linux-port_$VERSION_amd64.deb`
 - `codex-ui-linux-port-$VERSION-1.x86_64.rpm`
 - `manifest.json`
 - `checksums.txt`
 
-The workflow downloads the upstream source archive on every run. If a release for the same version already exists, the workflow compares the downloaded archive SHA256 with `manifest.json`, downloads every asset listed in `checksums.txt`, and verifies every hash. Matching source and artifact hashes mean the release is current and the build is skipped. Any mismatch rebuilds the packages and refreshes release assets with `--clobber`.
+The workflow reads the latest version from the official appcast and downloads the official stable `Codex.dmg` URL on every run. It validates the DMG's internal application version before packaging. If a release for the same version exists, the workflow compares the downloaded DMG SHA256 with `manifest.json`, downloads every asset listed in `checksums.txt`, and verifies every hash. Matching source and artifact hashes mean the release is current and the build is skipped. Any mismatch rebuilds the packages and refreshes release assets with `--clobber`.
 
 `manifest.json` records the upstream source URL, source archive filename, SHA256, package version, and UTC generation timestamp.
 

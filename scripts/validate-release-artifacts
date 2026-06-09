@@ -12,16 +12,8 @@ fail() {
 
 [[ -d "$DIST" ]] || fail "directory not found: $DIST"
 
-archive_file=""
-for candidate in "$DIST/Codex-${VERSION}.dmg" "$DIST/Codex-${VERSION}.zip"; do
-  if [[ -s "$candidate" ]]; then
-    if [[ -n "$archive_file" ]]; then
-      fail "multiple source archives found for $VERSION"
-    fi
-    archive_file="$(basename "$candidate")"
-  fi
-done
-[[ -n "$archive_file" ]] || fail "missing source archive: Codex-${VERSION}.dmg or Codex-${VERSION}.zip"
+archive_file="Codex-${VERSION}.dmg"
+[[ -s "$DIST/$archive_file" ]] || fail "missing source archive: $archive_file"
 
 expected=(
   "$archive_file"

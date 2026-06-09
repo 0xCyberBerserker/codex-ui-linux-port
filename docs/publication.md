@@ -36,7 +36,7 @@ GitHub Actions is the only authoritative release builder. It always downloads th
 
 Release assets must include:
 
-- `Codex-$VERSION.dmg` or `Codex-$VERSION.zip`
+- `Codex-$VERSION.dmg`
 - `codex-ui-linux-port-$VERSION-1-x86_64.pkg.tar.zst`
 - `codex-ui-linux-port_$VERSION_amd64.deb`
 - `codex-ui-linux-port-$VERSION-1.x86_64.rpm`

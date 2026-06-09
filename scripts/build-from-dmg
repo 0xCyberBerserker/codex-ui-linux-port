@@ -67,8 +67,12 @@ unpacked_path="$(find "$extract" -path '*/Codex.app/Contents/Resources/app.asar.
 app_src="$WORKDIR/app-src"
 "$tooling/node_modules/.bin/asar" extract "$asar_path" "$app_src"
 
+detected_version="$(node -e 'const p=require(process.argv[1]); process.stdout.write(p.version)' "$app_src/package.json")"
 if [[ -z "$VERSION" ]]; then
-  VERSION="$(node -e 'const p=require(process.argv[1]); process.stdout.write(p.version)' "$app_src/package.json")"
+  VERSION="$detected_version"
+elif [[ "$VERSION" != "$detected_version" ]]; then
+  echo "build-from-dmg: source version mismatch: expected $VERSION, found $detected_version" >&2
+  exit 1
 fi
 
 install_root="$WORKDIR/pkgroot/opt/codex-ui-linux-port"

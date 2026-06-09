@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       dmg_url:
-        description: "Optional source archive URL override"
+        description: "Optional official DMG URL override"
         required: false
         type: string
       version:
@@ -58,36 +58,31 @@ jobs:
             test -n "$version"
             ext="${DMG_URL_INPUT%%\?*}"
             ext="${ext##*.}"
-            case "$ext" in dmg|zip) ;; *) echo "unsupported source archive extension: $ext" >&2; exit 2 ;; esac
+            case "$ext" in dmg) ;; *) echo "release workflow requires a DMG source" >&2; exit 2 ;; esac
             echo "source_url=$DMG_URL_INPUT" >> "$GITHUB_OUTPUT"
             echo "version=$version" >> "$GITHUB_OUTPUT"
             echo "source_ext=$ext" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           appcast="$(jq -r '.appcastUrl' VERSION.json)"
+          dmg_url="$(jq -r '.dmgUrl' VERSION.json)"
           curl -fsSL "$appcast" -o appcast.xml
-          python3 <<'PY' >> "$GITHUB_OUTPUT"
+          VERSION="$(python3 <<'PY'
           import sys
           import xml.etree.ElementTree as ET
           ns = {"sparkle": "http://www.andymatuschak.org/xml-namespaces/sparkle"}
           root = ET.parse("appcast.xml").getroot()
           for item in root.findall("./channel/item"):
               version = item.findtext("sparkle:shortVersionString", namespaces=ns) or item.findtext("title") or ""
-              candidates = []
-              for enclosure in item.findall("enclosure"):
-                  url = enclosure.attrib.get("url", "")
-                  clean = url.split("?", 1)[0]
-                  if clean.endswith((".dmg", ".zip")) and ".delta" not in clean:
-                      candidates.append(url)
-              if version and candidates:
-                  source_url = next((url for url in candidates if url.split("?", 1)[0].endswith(".dmg")), candidates[0])
-                  source_ext = source_url.split("?", 1)[0].rsplit(".", 1)[-1]
-                  print(f"source_url={source_url}")
-                  print(f"version={version}")
-                  print(f"source_ext={source_ext}")
+              if version:
+                  print(version)
                   sys.exit(0)
-          raise SystemExit("no supported source archive found in appcast")
+          raise SystemExit("no version found in appcast")
           PY
+          )"
+          echo "source_url=$dmg_url" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "source_ext=dmg" >> "$GITHUB_OUTPUT"
 
       - name: Download source archive
         env:
