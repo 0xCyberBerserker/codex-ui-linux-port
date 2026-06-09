@@ -7,8 +7,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/0xCyberBerserker/codex-ui-linux-port/actions/workflows/release.yml"><img alt="Release workflow" src="https://img.shields.io/github/actions/workflow/status/0xCyberBerserker/codex-ui-linux-port/release.yml?branch=main&label=release%20build"></a>
-  <a href="https://github.com/0xCyberBerserker/codex-ui-linux-port/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/0xCyberBerserker/codex-ui-linux-port?label=latest%20release"></a>
+  <a href="https://github.com/0xCyberBerserker/codex-ui-linux-port/actions/workflows/release.yml"><img alt="Release workflow" src="https://img.shields.io/badge/release%20build-passing-8fd18f"></a>
+  <a href="https://github.com/0xCyberBerserker/codex-ui-linux-port/releases/tag/v26.602.71036"><img alt="Latest release" src="https://img.shields.io/badge/latest%20release-v26.602.71036-ffb454"></a>
   <img alt="Targets" src="https://img.shields.io/badge/targets-Arch%20%7C%20Debian%20%7C%20RPM-ffb454">
   <img alt="Status" src="https://img.shields.io/badge/status-private%20validation-8fd18f">
   <img alt="Unofficial" src="https://img.shields.io/badge/OpenAI-unofficial-lightgrey">
@@ -24,7 +24,7 @@ This repository rebuilds the upstream macOS Codex UI release artifact into Linux
 
 | Area | Current signal |
 | --- | --- |
-| Release builder | GitHub Actions is authoritative |
+| Release builder | GitHub Actions is authoritative; badge is static while repository is private |
 | Source tracking | Upstream appcast, current source archive, SHA256 manifest |
 | Linux targets | Arch/CachyOS, Debian/Ubuntu, Fedora/RHEL-like |
 | Public status | Private validation now, public-ready structure later |
