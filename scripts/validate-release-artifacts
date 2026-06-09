@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+DIST="${1:-dist}"
+VERSION="${2:?version required}"
+NAME="codex-ui-linux-port"
+
+fail() {
+  echo "validate-release-artifacts: $*" >&2
+  exit 1
+}
+
+[[ -d "$DIST" ]] || fail "directory not found: $DIST"
+
+expected=(
+  "${NAME}-${VERSION}-1-x86_64.pkg.tar.zst"
+  "${NAME}-${VERSION}-1.x86_64.rpm"
+  "${NAME}_${VERSION}_amd64.deb"
+  "manifest.json"
+  "checksums.txt"
+)
+
+for artifact in "${expected[@]}"; do
+  [[ -s "$DIST/$artifact" ]] || fail "missing or empty artifact: $artifact"
+done
+
+for unexpected in "$DIST"/*.pkg.tar.zst "$DIST"/*.rpm "$DIST"/*.deb; do
+  [[ -e "$unexpected" ]] || continue
+  base="$(basename "$unexpected")"
+  case "$base" in
+    "${NAME}-${VERSION}-1-x86_64.pkg.tar.zst"|"${NAME}-${VERSION}-1.x86_64.rpm"|"${NAME}_${VERSION}_amd64.deb") ;;
+    *) fail "unexpected package artifact: $base" ;;
+  esac
+done
+
+if command -v jq >/dev/null 2>&1; then
+  manifest_version="$(jq -r '.version // empty' "$DIST/manifest.json")"
+else
+  manifest_version="$(node -e 'const fs=require("fs"); const p=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); process.stdout.write(p.version || "")' "$DIST/manifest.json")"
+fi
+
+[[ "$manifest_version" == "$VERSION" ]] || fail "manifest version mismatch: got '$manifest_version', expected '$VERSION'"
+
+(cd "$DIST" && sha256sum -c checksums.txt)
+
+echo "validate-release-artifacts: package set complete for $VERSION"

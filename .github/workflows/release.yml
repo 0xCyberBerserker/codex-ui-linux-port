@@ -72,6 +72,11 @@ jobs:
         run: |
           scripts/build-from-dmg --dmg Codex.dmg --version "${{ steps.source.outputs.version }}"
 
+      - name: Validate release artifacts
+        if: steps.existing.outputs.exists != 'true'
+        run: |
+          scripts/validate-release-artifacts dist "${{ steps.source.outputs.version }}"
+
       - name: Privacy audit
         if: steps.existing.outputs.exists != 'true'
         run: scripts/privacy-audit
@@ -86,4 +91,3 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --title "Codex UI Linux Port $VERSION" \
             --notes "Private automated Linux package build for Codex UI $VERSION."
-

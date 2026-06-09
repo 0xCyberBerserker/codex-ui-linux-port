@@ -39,6 +39,10 @@ Private release access requires one of:
 
 ## Build From A DMG
 
+GitHub Actions is the authoritative release builder. Scheduled and manual workflow runs download the upstream DMG, build the Arch/CachyOS, Debian, and RPM packages, validate the full artifact set, run the privacy audit, and publish a private release.
+
+Local builds are for bootstrap, debugging, and smoke testing only:
+
 ```bash
 scripts/build-from-dmg --dmg /path/to/Codex.dmg
 ```
@@ -58,4 +62,3 @@ The audit blocks local paths, Codex runtime state, token-like strings, private k
 ## Disclaimer
 
 This is an unofficial private automation wrapper and packaging toolkit. Codex, the Codex UI app, and upstream binaries belong to OpenAI. This repository does not claim endorsement, ownership, or official support.
-
