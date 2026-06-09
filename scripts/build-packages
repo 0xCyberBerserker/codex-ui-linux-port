@@ -30,7 +30,6 @@ JSON
 
 arch_root="$DIST/arch-root"
 stage_common "$arch_root"
-mkdir -p "$arch_root/.PKGINFO"
 cat > "$DIST/.PKGINFO" <<EOF
 pkgname = $NAME
 pkgbase = $NAME
@@ -49,7 +48,7 @@ depend = jq
 depend = desktop-file-utils
 EOF
 cp "$DIST/.PKGINFO" "$arch_root/.PKGINFO"
-tar --zstd -cf "$DIST/${NAME}-${VERSION}-1-${ARCH}.pkg.tar.zst" -C "$arch_root" .
+(cd "$arch_root" && bsdtar --zstd -cf "$DIST/${NAME}-${VERSION}-1-${ARCH}.pkg.tar.zst" .PKGINFO opt usr)
 
 deb_root="$DIST/deb-root"
 if command -v dpkg-deb >/dev/null 2>&1; then
@@ -117,3 +116,4 @@ else
 fi
 
 rm -rf "$DIST/arch-root" "$DIST/deb-root" "$DIST/rpm-root" "$DIST/rpmbuild"
+rm -f "$DIST/.PKGINFO" "$DIST/${NAME}.spec" "$DIST/${NAME}-${VERSION}-payload.tar.gz"

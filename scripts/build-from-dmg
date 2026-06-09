@@ -92,5 +92,5 @@ cat > "$DIST/manifest.json" <<JSON
 }
 JSON
 
-(cd "$DIST" && sha256sum *.deb *.rpm *.pkg.tar.zst manifest.json 2>/dev/null > checksums.txt)
+(cd "$DIST" && find . -maxdepth 1 -type f \( -name '*.deb' -o -name '*.rpm' -o -name '*.pkg.tar.zst' -o -name 'manifest.json' \) -printf '%P\n' | sort | xargs -r sha256sum > checksums.txt)
 echo "build-from-dmg: artifacts written to $DIST"
