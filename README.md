@@ -22,7 +22,7 @@
   <sub>Made with 🖤 in Barcelona City 🇪🇸</sub>
 </p>
 
-This repository rebuilds upstream Codex UI release artifacts into Linux packages through auditable scripts and GitHub Actions.
+This repository rebuilds upstream Codex UI release artifacts into Linux packages for Codex UI through auditable scripts and GitHub Actions, with packaging targets for Arch, CachyOS, Debian, Ubuntu, and RPM-based distributions.
 
 ## Project Signal
 
@@ -129,6 +129,10 @@ Publication and redistribution notes live in [docs/publication.md](docs/publicat
 - [Publication Checklist](docs/publication.md)
 - [Security Policy](SECURITY.md)
 - [Disclaimer](DISCLAIMER.md)
+
+## Companion tools
+
+- [`token-rat-esp`](https://github.com/0xCyberBerserker/token-rat-esp): Spanish Codex skill for shorter answers, cleaner patches and token-efficient developer workflows.
 
 ## License
 
