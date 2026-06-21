@@ -11,6 +11,11 @@ on:
         description: "Optional version override"
         required: false
         type: string
+      force_rebuild:
+        description: "Force package rebuild even when the release appears fresh"
+        required: false
+        type: boolean
+        default: false
   schedule:
     - cron: "17 4 * * *"
 
@@ -95,6 +100,7 @@ jobs:
         id: freshness
         env:
           GH_TOKEN: ${{ github.token }}
+          FORCE_REBUILD: ${{ inputs.force_rebuild }}
           SOURCE_EXT: ${{ steps.source.outputs.source_ext }}
           VERSION: ${{ steps.source.outputs.version }}
         run: |
@@ -138,7 +144,9 @@ jobs:
             fi
           fi
 
-          if [ "$existing_sha" = "$source_sha" ] && [ "$asset_set_complete" = "true" ]; then
+          if [ "${FORCE_REBUILD:-false}" = "true" ]; then
+            echo "fresh=false" >> "$GITHUB_OUTPUT"
+          elif [ "$existing_sha" = "$source_sha" ] && [ "$asset_set_complete" = "true" ]; then
             echo "fresh=true" >> "$GITHUB_OUTPUT"
           else
             echo "fresh=false" >> "$GITHUB_OUTPUT"
