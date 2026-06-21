@@ -4,6 +4,7 @@ set -euo pipefail
 INSTALL_ROOT="${1:?install root required}"
 VERSION="${2:?version required}"
 APP_SRC="$INSTALL_ROOT/app-src"
+BUILD_NUMBER="$(node -e 'const p=require(process.argv[1]); process.stdout.write(String(p.codexBuildNumber || ""))' "$APP_SRC/package.json")"
 
 mkdir -p "$INSTALL_ROOT/bin" "$INSTALL_ROOT/share/icons/hicolor/scalable/apps"
 
@@ -45,6 +46,7 @@ if [[ "\${1:-}" == "--version" ]]; then
 fi
 
 export BUILD_FLAVOR=prod
+export CODEX_BUILD_NUMBER="\${CODEX_BUILD_NUMBER:-$BUILD_NUMBER}"
 export CODEX_CLI_PATH="\$CLI_WRAPPER"
 
 locale_value="\${CODEXUI_LANG:-\${LC_ALL:-\${LC_MESSAGES:-\${LANG:-}}}}"
@@ -77,6 +79,20 @@ let text = fs.readFileSync(file, "utf8");
 const before = "let i=require(`electron`),a=require(`node:path`);";
 const after = "let i=require(`electron`);try{i.Menu.setApplicationMenu(null),i.app.on(`browser-window-created`,(e,t)=>{try{t.setMenuBarVisibility(!1),t.removeMenu?.()}catch{}})}catch{}let a=require(`node:path`);";
 if (text.includes(before) && !text.includes("Menu.setApplicationMenu(null)")) {
+  text = text.replace(before, after);
+  fs.writeFileSync(file, text, "utf8");
+}
+NODE
+fi
+
+if [[ -f "$APP_SRC/.vite/build/workspace-root-drop-handler-"*.js ]]; then
+  node - "$APP_SRC"/.vite/build/workspace-root-drop-handler-*.js <<'NODE'
+const fs = require("fs");
+const file = process.argv[2];
+let text = fs.readFileSync(file, "utf8");
+const before = "function Qe(){let e=process._linkedBinding;if(typeof e!=`function`)throw Error(`Owl feature binding is unavailable`);return Ge.parse(e.call(process,`electron_common_owl_features`))}";
+const after = "function Qe(){let e=process._linkedBinding;if(typeof e==`function`)try{return Ge.parse(e.call(process,`electron_common_owl_features`))}catch{}return Ge.parse({isOwlFeatureEnabled:e=>nt(rt(`enable-features`)).includes(e)&&!nt(rt(`disable-features`)).includes(e)})}";
+if (text.includes(before) && !text.includes("electron_common_owl_features`))}catch{}")) {
   text = text.replace(before, after);
   fs.writeFileSync(file, text, "utf8");
 }
