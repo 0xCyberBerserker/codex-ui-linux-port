@@ -78,6 +78,7 @@ if command -v rpmbuild >/dev/null 2>&1; then
   stage_common "$rpm_root"
   tar -C "$rpm_root" -czf "$DIST/${NAME}-${VERSION}-payload.tar.gz" .
   cat > "$DIST/${NAME}.spec" <<EOF
+%global __brp_strip_static_archive %{nil}
 Name: $NAME
 Version: $VERSION
 Release: 1
