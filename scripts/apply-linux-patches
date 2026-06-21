@@ -4,7 +4,7 @@ set -euo pipefail
 INSTALL_ROOT="${1:?install root required}"
 VERSION="${2:?version required}"
 APP_SRC="$INSTALL_ROOT/app-src"
-BUILD_NUMBER="$(node -e 'const p=require(process.argv[1]); process.stdout.write(String(p.codexBuildNumber || ""))' "$APP_SRC/package.json")"
+BUILD_NUMBER="$(node -e 'const p=require(process.argv[1]); process.stdout.write(String(p["codexBuildNumber"] || ""))' "$APP_SRC/package.json")"
 
 mkdir -p "$INSTALL_ROOT/bin" "$INSTALL_ROOT/share/icons/hicolor/scalable/apps"
 
