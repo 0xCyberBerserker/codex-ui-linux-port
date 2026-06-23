@@ -85,16 +85,25 @@ if (text.includes(before) && !text.includes("Menu.setApplicationMenu(null)")) {
 NODE
 fi
 
-if [[ -f "$APP_SRC/.vite/build/workspace-root-drop-handler-"*.js ]]; then
-  node - "$APP_SRC"/.vite/build/workspace-root-drop-handler-*.js <<'NODE'
+workspace_root_drop_handlers=("$APP_SRC"/.vite/build/workspace-root-drop-handler-*.js)
+if [[ -f "${workspace_root_drop_handlers[0]:-}" ]]; then
+  node - "${workspace_root_drop_handlers[@]}" <<'NODE'
 const fs = require("fs");
-const file = process.argv[2];
-let text = fs.readFileSync(file, "utf8");
 const before = "function Qe(){let e=process._linkedBinding;if(typeof e!=`function`)throw Error(`Owl feature binding is unavailable`);return Ge.parse(e.call(process,`electron_common_owl_features`))}";
 const after = "function Qe(){let e=process._linkedBinding;if(typeof e==`function`)try{return Ge.parse(e.call(process,`electron_common_owl_features`))}catch{}return Ge.parse({isOwlFeatureEnabled:e=>nt(rt(`enable-features`)).includes(e)&&!nt(rt(`disable-features`)).includes(e)})}";
-if (text.includes(before) && !text.includes("electron_common_owl_features`))}catch{}")) {
-  text = text.replace(before, after);
-  fs.writeFileSync(file, text, "utf8");
+for (const file of process.argv.slice(2)) {
+  let text = fs.readFileSync(file, "utf8");
+  if (text.includes("electron_common_owl_features`))}catch{}")) {
+    continue;
+  }
+  if (text.includes(before)) {
+    text = text.replace(before, after);
+    fs.writeFileSync(file, text, "utf8");
+    continue;
+  }
+  if (text.includes("Owl feature binding is unavailable")) {
+    throw new Error(`unrecognized Owl feature binding shape in ${file}`);
+  }
 }
 NODE
 fi
