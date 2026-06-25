@@ -77,9 +77,101 @@ const fs = require("fs");
 const file = process.argv[2];
 let text = fs.readFileSync(file, "utf8");
 const before = "let i=require(`electron`),a=require(`node:path`);";
-const after = "let i=require(`electron`);try{i.Menu.setApplicationMenu(null),i.app.on(`browser-window-created`,(e,t)=>{try{t.setMenuBarVisibility(!1),t.removeMenu?.()}catch{}})}catch{}let a=require(`node:path`);";
-if (text.includes(before) && !text.includes("Menu.setApplicationMenu(null)")) {
-  text = text.replace(before, after);
+const bridgeMarker = "codexui-linux-control-bridge";
+const bridgeV2 = String.raw`try{
+globalThis.__codexUiLinuxControlBridge="codexui-linux-control-bridge";
+(()=>{
+const fs=require("node:fs"),net=require("node:net"),path=require("node:path"),os=require("node:os");
+function visibleWindow(){
+  const focused=i.BrowserWindow.getFocusedWindow();
+  if(focused&&!focused.isDestroyed()&&focused.isVisible())return focused;
+  return i.BrowserWindow.getAllWindows().find(w=>!w.isDestroyed()&&w.isVisible());
+}
+function showWindow(win){
+  if(!win)throw Error("no visible Codex window");
+  if(win.isMinimized())win.restore();
+  win.show();
+  win.focus();
+}
+async function startDictation(win){
+  showWindow(win);
+  await win.webContents.executeJavaScript("(()=>{const opts={key:\"D\",code:\"KeyD\",ctrlKey:true,shiftKey:true,bubbles:true,cancelable:true,composed:true};const targets=[window,document,document.activeElement].filter(Boolean);for(const target of targets){try{target.dispatchEvent(new KeyboardEvent(\"keydown\",opts))}catch{}}setTimeout(()=>{for(const target of targets){try{target.dispatchEvent(new KeyboardEvent(\"keyup\",opts))}catch{}}},80);})()",true);
+  return {ok:true};
+}
+function promptScript(prompt,submit){
+  return "(async()=>{const text="+JSON.stringify(String(prompt||""))+";const submit="+(submit===false?"false":"true")+";function visible(el){if(!el||!el.getBoundingClientRect)return false;const r=el.getBoundingClientRect();const s=getComputedStyle(el);return r.width>0&&r.height>0&&s.visibility!==\"hidden\"&&s.display!==\"none\";}function box(el){if(!visible(el))return false;const tag=(el.tagName||\"\").toLowerCase();return tag===\"textarea\"||tag===\"input\"||el.isContentEditable||el.getAttribute(\"contenteditable\")===\"true\"||el.getAttribute(\"role\")===\"textbox\";}function pick(){const active=document.activeElement;if(box(active))return active;const all=Array.from(document.querySelectorAll(\"textarea,input[type=text],[contenteditable=true],[role=textbox]\")).filter(box);return all[all.length-1]||null;}function setText(el,value){el.focus();const tag=(el.tagName||\"\").toLowerCase();if(tag===\"textarea\"||tag===\"input\"){const proto=tag===\"textarea\"?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;const setter=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(setter)setter.call(el,value);else el.value=value;el.dispatchEvent(new InputEvent(\"input\",{bubbles:true,inputType:\"insertText\",data:value}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));return;}try{document.execCommand(\"selectAll\",false,null);document.execCommand(\"insertText\",false,value);}catch{el.textContent=value;}el.dispatchEvent(new InputEvent(\"input\",{bubbles:true,inputType:\"insertText\",data:value}));}function buttonLabel(b){return String((b.getAttribute(\"aria-label\")||\"\")+\" \"+(b.title||\"\")+\" \"+(b.textContent||\"\")).toLowerCase();}const el=pick();if(!el)throw Error(\"no prompt field found\");setText(el,text);await new Promise(r=>setTimeout(r,180));if(submit){const buttons=Array.from(document.querySelectorAll(\"button\")).filter(visible).reverse();const send=buttons.find(b=>!b.disabled&&/(send|enviar|submit)/.test(buttonLabel(b)));if(send){send.click();return {inserted:true,submitted:\"button\"};}const opts={key:\"Enter\",code:\"Enter\",bubbles:true,cancelable:true,composed:true};el.dispatchEvent(new KeyboardEvent(\"keydown\",opts));el.dispatchEvent(new KeyboardEvent(\"keyup\",opts));return {inserted:true,submitted:\"enter\"};}return {inserted:true,submitted:false};})()";
+}
+async function submitPrompt(win,payload){
+  showWindow(win);
+  const prompt=String(payload.prompt||"").trim();
+  if(!prompt)throw Error("empty prompt");
+  const result=await win.webContents.executeJavaScript(promptScript(prompt,payload.submit),true);
+  return {ok:true,result};
+}
+function readScript(mode){
+  return "(async()=>{const mode="+JSON.stringify(String(mode||"selection"))+";function visible(el){if(!el||!el.getBoundingClientRect)return false;const r=el.getBoundingClientRect();const s=getComputedStyle(el);return r.width>0&&r.height>0&&s.visibility!==\"hidden\"&&s.display!==\"none\";}function clean(s){return String(s||\"\").replace(/\\s+/g,\" \").trim();}if(mode===\"selection\"){const selected=clean(window.getSelection&&window.getSelection().toString());if(selected)return {text:selected,source:\"selection\"};}const nodes=Array.from(document.querySelectorAll(\"main article,[data-message-author-role],.markdown,main,[role=main]\")).filter(visible);const texts=nodes.map(n=>clean(n.innerText||n.textContent)).filter(Boolean);if(mode===\"last-response\"){for(let i=texts.length-1;i>=0;i--){const text=texts[i];if(text.length>40)return {text,source:\"last-response\"};}if(texts.length)return {text:texts[texts.length-1],source:\"last-visible\"};}const body=clean((document.body&&document.body.innerText)||\"\");return {text:body,source:\"visible\"};})()";
+}
+async function readText(win,payload){
+  showWindow(win);
+  const result=await win.webContents.executeJavaScript(readScript(payload.mode),true);
+  const text=String(result&&result.text||"").trim();
+  if(!text)throw Error("no readable text found");
+  return {ok:true,text,source:String(result&&result.source||"unknown")};
+}
+function handle(payload){
+  const win=visibleWindow();
+  if(payload.command==="start-dictation")return startDictation(win);
+  if(payload.command==="submit-prompt")return submitPrompt(win,payload);
+  if(payload.command==="read-text")return readText(win,payload);
+  throw Error("unsupported command");
+}
+function setup(){
+  const runtime=process.env.XDG_RUNTIME_DIR||path.join(os.tmpdir(),"codex-ui-"+(process.getuid?.()??"user"));
+  const dir=path.join(runtime,"codex-ui-linux-port");
+  fs.mkdirSync(dir,{recursive:true,mode:0o700});
+  const sock=path.join(dir,"control.sock");
+  try{if(fs.existsSync(sock))fs.unlinkSync(sock)}catch{}
+  const server=net.createServer(conn=>{
+    let buffer="";
+    conn.setEncoding("utf8");
+    conn.on("data",chunk=>{
+      buffer+=chunk;
+      if(!buffer.includes("\n"))return;
+      const line=buffer.trim();
+      buffer="";
+      Promise.resolve().then(()=>{let payload;try{payload=JSON.parse(line)}catch{payload={command:line}}return handle(payload)}).then(result=>{conn.write(JSON.stringify(result)+"\n");conn.end()}).catch(err=>{conn.write(JSON.stringify({ok:false,error:String(err?.message||err)})+"\n");conn.end()});
+    });
+  });
+  server.listen(sock,()=>{try{fs.chmodSync(sock,0o600)}catch{}});
+}
+i.app.whenReady().then(setup).catch(()=>{});
+})();
+}catch{}`;
+const menuPatch = "try{i.Menu.setApplicationMenu(null),i.app.on(`browser-window-created`,(e,t)=>{try{t.setMenuBarVisibility(!1),t.removeMenu?.()}catch{}})}catch{}";
+const electronRequire = "let i=require(`electron`);";
+const menuPatchStart = "try{i.Menu.setApplicationMenu";
+if (text.includes(bridgeMarker) && text.includes(menuPatchStart) && (!text.includes("submit-prompt") || !text.includes("read-text"))) {
+  const start = text.indexOf(electronRequire);
+  const bridgeStart = start === -1 ? -1 : start + electronRequire.length;
+  const bridgeEnd = text.indexOf(menuPatchStart, bridgeStart);
+  if (bridgeStart !== -1 && bridgeEnd > bridgeStart) {
+    text = text.slice(0, bridgeStart) + bridgeV2 + text.slice(bridgeEnd);
+    fs.writeFileSync(file, text, "utf8");
+  }
+}
+if (text.includes(before)) {
+  const after = `let i=require(\`electron\`);${bridgeV2}${menuPatch}let a=require(\`node:path\`);`;
+  if (!text.includes(bridgeMarker) || !text.includes("Menu.setApplicationMenu(null)")) {
+    text = text.replace(before, after);
+    fs.writeFileSync(file, text, "utf8");
+  }
+} else {
+  if (!text.includes(bridgeMarker)) {
+    text = text.replace("let i=require(`electron`);", `let i=require(\`electron\`);${bridgeV2}`);
+  }
+  if (!text.includes("Menu.setApplicationMenu(null)")) {
+    text = text.replace("let i=require(`electron`);", `let i=require(\`electron\`);${menuPatch}`);
+  }
   fs.writeFileSync(file, text, "utf8");
 }
 NODE
