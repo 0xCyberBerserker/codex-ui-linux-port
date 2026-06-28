@@ -4,6 +4,16 @@
 
 Codex UI Linux Port is packaging automation around upstream Codex UI release artifacts. It does not own or modify upstream product behavior beyond Linux packaging patches required for desktop integration.
 
+```mermaid
+flowchart LR
+    appcast["Upstream appcast"] --> source["Official source asset"]
+    source --> verify["Version and SHA256 verification"]
+    verify --> patch["Linux patches and native rebuild"]
+    patch --> packages["Arch, Debian, RPM packages"]
+    packages --> release["GitHub release assets"]
+    release --> updater["codexui-update"]
+```
+
 ```text
 Upstream appcast
   -> Official source asset
