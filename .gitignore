@@ -38,4 +38,4 @@ id_rsa*
 id_ed25519*
 known_hosts
 config.local.*
-
+AGENTS.md

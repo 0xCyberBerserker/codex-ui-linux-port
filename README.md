@@ -125,10 +125,26 @@ Publication and redistribution notes live in [docs/publication.md](docs/publicat
 - [Usage](docs/usage.md)
 - [Packaging](docs/packaging.md)
 - [Security And Privacy](docs/security.md)
+- [Changelog](CHANGELOG.md)
+- [User Manual](manual_usuario.md)
+- [Architecture](arquitectura.md)
+- [Roadmap](roadmap.md)
+- [Codex Instructions](AGENTS.md)
 - [AUR Preparation](docs/aur.md)
 - [Publication Checklist](docs/publication.md)
 - [Security Policy](SECURITY.md)
 - [Disclaimer](DISCLAIMER.md)
+
+## Documentación
+
+- [Uso](docs/usage.md)
+- [Empaquetado](docs/packaging.md)
+- [Seguridad y privacidad](docs/security.md)
+- [Registro de cambios](CHANGELOG.md)
+- [Manual de usuario](manual_usuario.md)
+- [Arquitectura](arquitectura.md)
+- [Roadmap](roadmap.md)
+- [Instrucciones para Codex](AGENTS.md)
 
 ## Companion tools
 
