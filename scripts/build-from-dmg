@@ -60,9 +60,10 @@ if ! 7z x -y -o"$extract" "$SOURCE" >/dev/null; then
   echo "build-from-dmg: source extraction reported warnings; validating required application files" >&2
 fi
 
-asar_path="$(find "$extract" -path '*/Codex.app/Contents/Resources/app.asar' -type f | head -n 1)"
-unpacked_path="$(find "$extract" -path '*/Codex.app/Contents/Resources/app.asar.unpacked' -type d | head -n 1)"
+asar_path="$(find "$extract" -path '*.app/Contents/Resources/app.asar' -type f | head -n 1)"
 [[ -f "$asar_path" ]] || { echo "build-from-dmg: app.asar not found" >&2; exit 1; }
+unpacked_path="$(dirname "$asar_path")/app.asar.unpacked"
+[[ -d "$unpacked_path" ]] || unpacked_path=""
 
 app_src="$WORKDIR/app-src"
 "$tooling/node_modules/.bin/asar" extract "$asar_path" "$app_src"
