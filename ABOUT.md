@@ -19,7 +19,7 @@ The project provides:
 - Linux desktop integration patches
 - Arch/CachyOS package output plus experimental Debian and RPM outputs
 - checksum and manifest validation
-- a host-aware updater command: `codexui-update`
+- a host-aware updater command: `codex-ui-update`
 - future AUR metadata
 
 ## Non-Goals

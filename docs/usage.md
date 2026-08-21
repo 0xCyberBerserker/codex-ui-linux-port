@@ -3,7 +3,7 @@
 ## Update
 
 ```bash
-codexui-update
+codex-ui-update
 ```
 
 The updater detects the host OS, downloads the latest compatible package from the GitHub release, verifies checksums, installs the package, and checks the installed command.
@@ -23,8 +23,10 @@ Private forks or rate-limited environments can authenticate with `GITHUB_TOKEN` 
 ## Smoke Test
 
 ```bash
-codexui-update --smoke
+codex-ui-update --smoke
 ```
+
+`codexui-update` remains available as a compatibility alias with the same flags.
 
 The smoke test launches Codex UI with a temporary profile and checks for a successful startup log.
 

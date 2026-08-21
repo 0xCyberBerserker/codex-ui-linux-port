@@ -11,7 +11,7 @@ flowchart LR
     verify --> patch["Linux patches and native rebuild"]
     patch --> packages["Arch, Debian, RPM packages"]
     packages --> release["GitHub release assets"]
-    release --> updater["codexui-update"]
+    release --> updater["codex-ui-update"]
 ```
 
 ```text
@@ -21,7 +21,7 @@ Upstream appcast
   -> Linux patches and native rebuild
   -> Arch, Debian, and RPM packages
   -> GitHub release assets
-  -> codexui-update
+  -> codex-ui-update
 ```
 
 ## Components
@@ -29,7 +29,7 @@ Upstream appcast
 - `scripts/build-from-dmg`: extracts the official source asset, rebuilds native modules, applies Linux patches, and produces packages.
 - `scripts/build-packages`: creates Arch, Debian, and RPM package outputs from a prepared package root.
 - `scripts/validate-release-artifacts`: validates the expected release asset set and checksums.
-- `scripts/codexui-update`: detects the host package manager, downloads the matching package, verifies checksums, installs, and can smoke-test.
+- `scripts/codex-ui-update`: detects the host package manager, downloads the matching package, verifies checksums, installs, and can smoke-test.
 - `tools/`: pinned Node.js tooling for reproducible native module rebuilds.
 - `packaging/`: package metadata templates.
 - `docs/`: usage, packaging, security, publication, and AUR notes.
@@ -54,7 +54,7 @@ Codex UI Linux Port es automatización de empaquetado alrededor de artefactos up
 - `scripts/build-from-dmg`: extrae el artefacto oficial, recompila módulos nativos, aplica patches Linux y produce paquetes.
 - `scripts/build-packages`: crea salidas Arch, Debian y RPM desde un package root preparado.
 - `scripts/validate-release-artifacts`: valida el conjunto esperado de assets de release y checksums.
-- `scripts/codexui-update`: detecta el gestor de paquetes del host, descarga el paquete compatible, verifica checksums, instala y puede ejecutar smoke test.
+- `scripts/codex-ui-update`: detecta el gestor de paquetes del host, descarga el paquete compatible, verifica checksums, instala y puede ejecutar smoke test.
 - `tools/`: tooling Node.js fijado para recompilar módulos nativos de forma reproducible.
 - `packaging/`: plantillas de metadata de paquetes.
 - `docs/`: notas de uso, empaquetado, seguridad, publicación y AUR.

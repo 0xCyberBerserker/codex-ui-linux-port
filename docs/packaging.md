@@ -6,7 +6,8 @@ Installed paths:
 
 - `/opt/codex-ui-linux-port`
 - `/usr/bin/codex-ui-linux`
-- `/usr/bin/codexui-update`
+- `/usr/bin/codex-ui-update`
+- `/usr/bin/codexui-update` (compatibility alias)
 - `/usr/share/applications/codex-ui-linux.desktop`
 - `/usr/share/icons/hicolor/scalable/apps/codex-ui-linux.svg`
 

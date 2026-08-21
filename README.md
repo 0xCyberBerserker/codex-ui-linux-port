@@ -64,22 +64,24 @@ The automation was built to turn unavoidable waiting periods such as long builds
 ## Install Or Update
 
 ```bash
-codexui-update
+codex-ui-update
 ```
 
 Check without installing:
 
 ```bash
-codexui-update --check
+codex-ui-update --check
 ```
 
 Run a smoke test:
 
 ```bash
-codexui-update --smoke
+codex-ui-update --smoke
 ```
 
 Public release downloads do not require authentication. Private forks can use `GITHUB_TOKEN` or `GH_TOKEN`.
+
+The legacy `codexui-update` command remains available as a compatibility alias and accepts the same flags.
 
 ## Release Pipeline
 

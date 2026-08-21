@@ -7,20 +7,22 @@ Codex UI Linux Port provides an unofficial Linux packaging and update path for C
 ## Install Or Update
 
 ```bash
-codexui-update
+codex-ui-update
 ```
 
 ## Check Latest Available Version
 
 ```bash
-codexui-update --check
+codex-ui-update --check
 ```
 
 ## Smoke Test
 
 ```bash
-codexui-update --smoke
+codex-ui-update --smoke
 ```
+
+The legacy `codexui-update` command remains available as a compatibility alias with the same flags.
 
 The smoke test launches Codex UI with a temporary profile and checks for a startup marker.
 
@@ -49,20 +51,22 @@ Codex UI Linux Port proporciona una vía no oficial para empaquetar y actualizar
 ## Instalar o actualizar
 
 ```bash
-codexui-update
+codex-ui-update
 ```
 
 ## Comprobar última versión disponible
 
 ```bash
-codexui-update --check
+codex-ui-update --check
 ```
 
 ## Smoke test
 
 ```bash
-codexui-update --smoke
+codex-ui-update --smoke
 ```
+
+El comando anterior `codexui-update` permanece disponible como alias compatible con los mismos flags.
 
 El smoke test lanza Codex UI con un perfil temporal y comprueba una marca de arranque correcto.
 
