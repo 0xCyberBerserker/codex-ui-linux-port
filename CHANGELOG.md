@@ -8,6 +8,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ### Fixed
 
+- `codex-ui-update --force` now genuinely reinstalls the current package on Arch, Debian, and RPM-based systems.
 - Discord Rich Presence now clears immediately when Codex exits instead of leaving a stale activity visible.
 - The updater now removes stale per-user desktop entry overrides after preserving customized copies, so package updates are visible in desktop menus.
 
@@ -38,6 +39,7 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) y los 
 
 ### Corregido
 
+- `codex-ui-update --force` ahora reinstala realmente el paquete actual en sistemas Arch, Debian y basados en RPM.
 - Discord Rich Presence ahora se elimina al cerrar Codex en lugar de dejar una actividad obsoleta visible.
 - El actualizador elimina overrides obsoletos del lanzador de usuario tras conservar una copia si estaba personalizado, por lo que las actualizaciones del paquete llegan al menú de aplicaciones.
 

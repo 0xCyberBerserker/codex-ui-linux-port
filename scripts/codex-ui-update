@@ -124,17 +124,23 @@ case " $id $id_like " in
   *" arch "*|*" cachyos "*)
     pkg_kind="pkg.tar.zst"
     deps=(electron42 nodejs curl jq desktop-file-utils)
-    install_cmd=(pacman -U --needed)
+    install_cmd=(pacman -U)
+    [[ "$FORCE" -eq 1 ]] || install_cmd+=(--needed)
     ;;
   *" debian "*|*" ubuntu "*)
     pkg_kind="deb"
     deps=(electron42 nodejs curl jq desktop-file-utils)
     install_cmd=(apt-get install -y)
+    [[ "$FORCE" -eq 1 ]] && install_cmd+=(--reinstall)
     ;;
   *" fedora "*|*" rhel "*|*" centos "*)
     pkg_kind="rpm"
     deps=(electron42 nodejs curl jq desktop-file-utils)
-    install_cmd=(dnf install -y)
+    if [[ "$FORCE" -eq 1 ]]; then
+      install_cmd=(dnf reinstall -y)
+    else
+      install_cmd=(dnf install -y)
+    fi
     ;;
   *)
     echo "$PROGRAM: unsupported distro: ID=$id ID_LIKE=$id_like" >&2
