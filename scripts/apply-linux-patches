@@ -14,23 +14,25 @@ cat > "$INSTALL_ROOT/bin/codex-cli-wrapper" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 
-candidates=()
+candidate_versions=()
 for root in "$HOME/.local/lib/node_modules/@openai/codex" "$HOME/.local/share/pnpm/global" "/usr/lib/node_modules/@openai/codex"; do
   if [[ -d "$root" && -f "$root/bin/codex.js" ]]; then
-    candidates+=("$root")
+    version="$(node -p "require(process.argv[1]).version" "$root/package.json" 2>/dev/null || true)"
+    [[ -n "$version" ]] && candidate_versions+=("$version	$root")
   elif [[ -d "$root" ]]; then
     while IFS= read -r found; do
-      candidates+=("$found")
+      version="$(node -p "require(process.argv[1]).version" "$found/package.json" 2>/dev/null || true)"
+      [[ -n "$version" ]] && candidate_versions+=("$version	$found")
     done < <(find "$root" -type f -path '*/node_modules/@openai/codex/bin/codex.js' -printf '%h/..\n' 2>/dev/null)
   fi
 done
 
-if [[ "${#candidates[@]}" -eq 0 ]]; then
+if [[ "${#candidate_versions[@]}" -eq 0 ]]; then
   echo "codex-cli-wrapper: @openai/codex is not installed" >&2
   exit 127
 fi
 
-selected="$(printf '%s\n' "${candidates[@]}" | sort -V | tail -n 1)"
+selected="$(printf '%s\n' "${candidate_versions[@]}" | sort -V -k1,1 | tail -n 1 | cut -f2-)"
 exec /usr/bin/node "$selected/bin/codex.js" "$@"
 EOF
 
@@ -82,11 +84,30 @@ EOF
 
 chmod 755 "$INSTALL_ROOT/bin/codex-cli-wrapper" "$INSTALL_ROOT/bin/codex-ui-linux"
 
-if [[ -f "$APP_SRC/.vite/build/bootstrap.js" ]]; then
-  node - "$APP_SRC/.vite/build/bootstrap.js" <<'NODE'
+bootstrap_files=("$APP_SRC"/.vite/build/bootstrap.js "$APP_SRC"/.vite/build/bootstrap-*.js)
+for bootstrap_file in "${bootstrap_files[@]}"; do
+  [[ -f "$bootstrap_file" ]] || continue
+  node - "$bootstrap_file" <<'NODE'
 const fs = require("fs");
 const file = process.argv[2];
 let text = fs.readFileSync(file, "utf8");
+const owlShellGuard = /if\(process\.versions\.electron!=null&&typeof ([A-Za-z_$][\w$]*)\.app\.showTaskManager!=`function`\)throw Error\(`Codex requires the Owl app shell; stock Electron is no longer supported\.`\);/;
+if (text.includes("Codex requires the Owl app shell") && owlShellGuard.test(text)) {
+  text = text.replace(owlShellGuard, "if(process.versions.electron!=null&&typeof $1.app.showTaskManager!=`function`)$1.app.showTaskManager=()=>{};");
+}
+const stockElectronShim = /if\(process\.versions\.electron!=null&&typeof ([A-Za-z_$][\w$]*)\.app\.showTaskManager!=`function`\)\1\.app\.showTaskManager=\(\)=>\{\};/;
+const shimMatch = text.match(stockElectronShim);
+if (shimMatch) {
+  const electron = shimMatch[1];
+  const shims = [
+    `${electron}.app.setDebugChromePagesEnabled??=()=>{};`,
+    `${electron}.app.setRuntimeFeatures??=()=>{};`,
+    `${electron}.BrowserWindow.isInputShapeSupported??=()=>false;`,
+    `${electron}.BrowserWindow.isSystemBackdropSupported??=()=>false;`,
+  ].filter((shim) => !text.includes(shim)).join("");
+  text = text.replace(stockElectronShim, `$&${shims}`);
+  fs.writeFileSync(file, text, "utf8");
+}
 const before = "let i=require(`electron`),a=require(`node:path`);";
 const bridgeMarker = "codexui-linux-control-bridge";
 const bridgeV2 = String.raw`try{
@@ -186,7 +207,21 @@ if (text.includes(before)) {
   fs.writeFileSync(file, text, "utf8");
 }
 NODE
-fi
+done
+
+main_files=("$APP_SRC"/.vite/build/main.js "$APP_SRC"/.vite/build/main-*.js)
+for main_file in "${main_files[@]}"; do
+  [[ -f "$main_file" ]] || continue
+  node - "$main_file" <<'NODE'
+const fs = require("fs");
+const file = process.argv[2];
+let text = fs.readFileSync(file, "utf8");
+if (text.includes(".setPreferredLanguages(") && !text.includes(".setPreferredLanguages?.(")) {
+  text = text.replaceAll(".setPreferredLanguages(", ".setPreferredLanguages?.(");
+  fs.writeFileSync(file, text, "utf8");
+}
+NODE
+done
 
 workspace_root_drop_handlers=("$APP_SRC"/.vite/build/workspace-root-drop-handler-*.js)
 if [[ -f "${workspace_root_drop_handlers[0]:-}" ]]; then
