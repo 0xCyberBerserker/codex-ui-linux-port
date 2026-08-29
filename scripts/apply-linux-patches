@@ -3,10 +3,12 @@ set -euo pipefail
 
 INSTALL_ROOT="${1:?install root required}"
 VERSION="${2:?version required}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_SRC="$INSTALL_ROOT/app-src"
 BUILD_NUMBER="$(node -e 'const p=require(process.argv[1]); process.stdout.write(String(p["codexBuildNumber"] || ""))' "$APP_SRC/package.json")"
 
 mkdir -p "$INSTALL_ROOT/bin" "$INSTALL_ROOT/share/icons/hicolor/scalable/apps"
+install -m 644 "$SCRIPT_DIR/discord-rich-presence.js" "$INSTALL_ROOT/share/discord-rich-presence.js"
 
 cat > "$INSTALL_ROOT/bin/codex-cli-wrapper" <<'EOF'
 #!/usr/bin/env bash
@@ -64,6 +66,15 @@ fi
 if [[ -n "\${CODEXUI_ELECTRON_FLAGS:-}" ]]; then
   read -r -a configured_flags <<< "\$CODEXUI_ELECTRON_FLAGS"
   electron_args+=("\${configured_flags[@]}")
+fi
+
+discord_config="\${XDG_CONFIG_HOME:-\$HOME/.config}/codex-ui-linux-port/discord-rich-presence.json"
+if [[ -f "\$discord_config" ]]; then
+  if [[ "\${CODEXUI_DISCORD_RPC_DEBUG:-0}" == "1" ]]; then
+    /usr/bin/node "\$APP_ROOT/share/discord-rich-presence.js" "\$discord_config" &
+  else
+    /usr/bin/node "\$APP_ROOT/share/discord-rich-presence.js" "\$discord_config" >/dev/null 2>&1 &
+  fi
 fi
 
 exec "\$ELECTRON_BIN" "\${electron_args[@]}" "\$APP_ROOT/app-src" "\$@"

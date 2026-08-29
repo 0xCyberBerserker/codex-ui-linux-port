@@ -41,3 +41,24 @@ CODEXUI_ELECTRON_FLAGS="--disable-vulkan --force-device-scale-factor=1" codex-ui
 ```
 
 No language, X11 backend, Vulkan mode, or scale factor is forced by default.
+
+## Discord Rich Presence
+
+Copy `docs/discord-rich-presence.example.json` to
+`~/.config/codex-ui-linux-port/discord-rich-presence.json`, then set the public
+Discord Application ID and your own activities. The application name is the
+bold title shown by Discord. Asset fields accept keys configured in the Discord
+Developer Portal. Restart Codex UI after editing the file.
+
+No client secret or API key is required.
+
+## Discord Rich Presence (Español)
+
+Copia `docs/discord-rich-presence.example.json` en
+`~/.config/codex-ui-linux-port/discord-rich-presence.json` y configura el ID
+público de la aplicación de Discord y tus propias actividades. El nombre de la
+aplicación es el título en negrita que muestra Discord. Los campos de imágenes
+aceptan claves configuradas en el portal de desarrolladores de Discord. Reinicia
+Codex UI después de editar el archivo.
+
+No hace falta ningún secreto de cliente ni API key.

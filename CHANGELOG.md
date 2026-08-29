@@ -16,6 +16,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ### Added
 
+- Optional Discord Rich Presence with rotating user-defined activities, artwork, elapsed session time, and HTTPS buttons. Private configuration remains under the user's XDG config directory.
 - Repo-local Codex instructions.
 - Standard project documentation set: user manual, architecture, and roadmap.
 
@@ -43,6 +44,7 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) y los 
 
 ### Añadido
 
+- Discord Rich Presence opcional con actividades configurables y rotatorias, imágenes, tiempo de sesión y botones HTTPS. La configuración privada permanece en el directorio XDG del usuario.
 - Instrucciones repo-locales para Codex.
 - Conjunto estándar de documentación: manual de usuario, arquitectura y roadmap.
 

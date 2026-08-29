@@ -1,0 +1,23 @@
+{
+  "enabled": true,
+  "application_id": "YOUR_DISCORD_APPLICATION_ID",
+  "interval_seconds": 12600,
+  "assets": {
+    "large_image": "YOUR_LARGE_ASSET_KEY",
+    "large_text": "Your image description",
+    "small_image": "YOUR_SMALL_ASSET_KEY",
+    "small_text": "Your small image description"
+  },
+  "buttons": [
+    {
+      "label": "Project website",
+      "url": "https://example.com"
+    }
+  ],
+  "activities": [
+    {
+      "details": "Your public activity",
+      "state": "Your public status"
+    }
+  ]
+}

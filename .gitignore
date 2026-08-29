@@ -28,6 +28,7 @@ codex-ui-linux-port-*/
 *.jpg
 *.jpeg
 *.webp
+!docs/assets/discord/*.png
 
 # Secrets and host-specific files
 .env
@@ -38,4 +39,5 @@ id_rsa*
 id_ed25519*
 known_hosts
 config.local.*
+discord-rich-presence.json
 AGENTS.md
