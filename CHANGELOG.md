@@ -8,10 +8,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ### Fixed
 
+- Discord Rich Presence now clears immediately when Codex exits instead of leaving a stale activity visible.
 - The updater now removes stale per-user desktop entry overrides after preserving customized copies, so package updates are visible in desktop menus.
 
 ### Changed
 
+- Discord Rich Presence activities are now selected randomly without immediate repetition.
 - Standardized the updater command as `codex-ui-update`; `codexui-update` remains available as a compatibility alias with identical flags.
 
 ### Added
@@ -36,10 +38,12 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) y los 
 
 ### Corregido
 
+- Discord Rich Presence ahora se elimina al cerrar Codex en lugar de dejar una actividad obsoleta visible.
 - El actualizador elimina overrides obsoletos del lanzador de usuario tras conservar una copia si estaba personalizado, por lo que las actualizaciones del paquete llegan al menú de aplicaciones.
 
 ### Cambiado
 
+- Las actividades de Discord Rich Presence ahora se eligen aleatoriamente sin repetición inmediata.
 - Estandarizado el comando como `codex-ui-update`; `codexui-update` permanece como alias compatible con los mismos flags.
 
 ### Añadido

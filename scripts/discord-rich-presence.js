@@ -13,7 +13,8 @@ let socket;
 let rotationTimer;
 let reconnectTimer;
 let readBuffer = Buffer.alloc(0);
-let activityIndex = 0;
+let lastActivityIndex = -1;
+let shuttingDown = false;
 
 function frame(opcode, payload) {
   const body = Buffer.from(JSON.stringify(payload), "utf8");
@@ -66,9 +67,16 @@ function loadConfig() {
   return config;
 }
 
+function pickActivityIndex(length, previousIndex, random = Math.random) {
+  if (length <= 1) return 0;
+  const index = Math.floor(random() * length);
+  return index === previousIndex ? (index + 1) % length : index;
+}
+
 function sendActivity(config) {
   if (!socket?.writable) return;
-  const activity = config.activities[activityIndex++ % config.activities.length];
+  lastActivityIndex = pickActivityIndex(config.activities.length, lastActivityIndex);
+  const activity = config.activities[lastActivityIndex];
   socket.write(frame(1, {
     cmd: "SET_ACTIVITY",
     args: {
@@ -83,7 +91,25 @@ function sendActivity(config) {
         instance: false,
       },
     },
-    nonce: `${Date.now()}-${activityIndex}`,
+    nonce: `${Date.now()}-${lastActivityIndex}`,
+  }));
+}
+
+function clearActivityAndExit() {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  clearInterval(rotationTimer);
+  clearTimeout(reconnectTimer);
+
+  if (!socket?.writable) process.exit(0);
+  const exitTimer = setTimeout(() => process.exit(0), 500);
+  socket.write(frame(1, {
+    cmd: "SET_ACTIVITY",
+    args: { pid: parentPid, activity: null },
+    nonce: `${Date.now()}-clear`,
+  }), () => socket.end(() => {
+    clearTimeout(exitTimer);
+    process.exit(0);
   }));
 }
 
@@ -118,7 +144,7 @@ function connect(config) {
   socket.once("error", () => socket.destroy());
   socket.once("close", () => {
     clearInterval(rotationTimer);
-    scheduleReconnect(config);
+    if (!shuttingDown) scheduleReconnect(config);
   });
 }
 
@@ -130,6 +156,9 @@ function selfTest() {
   assert.deepEqual(normalizeButtons([{ label: "GitHub", url: "https://github.com/project" }]),
     [{ label: "GitHub", url: "https://github.com/project" }]);
   assert.throws(() => normalizeButtons([{ url: "http://example.com" }]), /HTTPS/);
+  assert.equal(pickActivityIndex(1, 0, () => 0), 0);
+  assert.equal(pickActivityIndex(3, 1, () => 0.4), 2);
+  assert.equal(pickActivityIndex(3, 1, () => 0.9), 2);
   console.log("discord-rich-presence: self-test passed");
 }
 
@@ -143,11 +172,13 @@ if (process.argv.includes("--self-test")) {
     const config = loadConfig();
     if (config) {
       connect(config);
+      process.once("SIGINT", clearActivityAndExit);
+      process.once("SIGTERM", clearActivityAndExit);
       setInterval(() => {
         try {
           process.kill(parentPid, 0);
         } catch {
-          process.exit(0);
+          clearActivityAndExit();
         }
       }, 5_000).unref();
     }
